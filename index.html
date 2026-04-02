@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dugout — Tracking Link Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0C0F12;
+    --surface: #141820;
+    --surface2: #1B2130;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.14);
+    --text: #E8ECF2;
+    --muted: #6B7585;
+    --faint: #3A4254;
+    --domain: #4FC3F7;
+    --domain-bg: rgba(79,195,247,0.1);
+    --affiliate: #81C784;
+    --affiliate-bg: rgba(129,199,132,0.1);
+    --creative: #CE93D8;
+    --creative-bg: rgba(206,147,216,0.1);
+    --subid: #FFB74D;
+    --subid-bg: rgba(255,183,77,0.1);
+    --accent: #4FC3F7;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+  html.light {
+    --bg: #F0F4F8;
+    --surface: #FFFFFF;
+    --surface2: #E8EDF3;
+    --border: rgba(0,0,0,0.09);
+    --border-hover: rgba(0,0,0,0.16);
+    --text: #1A2233;
+    --muted: #6B7890;
+    --faint: #B0BBC9;
+    --domain: #0288D1;
+    --domain-bg: rgba(2,136,209,0.08);
+    --affiliate: #388E3C;
+    --affiliate-bg: rgba(56,142,60,0.08);
+    --creative: #7B1FA2;
+    --creative-bg: rgba(123,31,162,0.08);
+    --subid: #E65100;
+    --subid-bg: rgba(230,81,0,0.08);
+    --accent: #0288D1;
+  }
+  .theme-toggle {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--muted); cursor: pointer; display: flex;
+    align-items: center; justify-content: center; font-size: 16px;
+    transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+    flex-shrink: 0;
+  }
+  .theme-toggle:hover { background: var(--border-hover); color: var(--text); transform: scale(1.1); }
+  /* Light mode — explicit overrides for elements that don't inherit vars cleanly */
+  html.light body { background: var(--bg); color: var(--text); }
+  html.light .form-select option { background: #FFFFFF; color: #1A2233; }
+  html.light .output-url { background: #1A2233; }
+  html.light .status-bar { background: #1A2233; }
+  html.light .detail-example { background: var(--surface2); color: var(--muted); }
+  html.light .url-example-url { background: #1A2233; color: #7EC8E3; }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Layout */
+  .app { display: grid; grid-template-columns: 240px 1fr; grid-template-rows: 60px 1fr; min-height: 100vh; }
+
+  /* Topbar */
+  .topbar {
+    grid-column: 1 / -1;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--text);
+    letter-spacing: -0.03em;
+  }
+  .logo span { color: var(--accent); }
+  .topbar-sep { width: 1px; height: 20px; background: var(--border); }
+  .topbar-label { font-size: 12px; color: var(--muted); font-weight: 400; }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+    background: rgba(79,195,247,0.12);
+    color: var(--accent);
+    border: 1px solid rgba(79,195,247,0.25);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+    overflow-y: auto;
+  }
+  .nav-section {
+    padding: 0 16px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--faint);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-top: 16px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 16px;
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    border-radius: 0;
+    transition: all .15s;
+    border-left: 2px solid transparent;
+    user-select: none;
+  }
+  .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  .nav-item.active { color: var(--text); background: rgba(79,195,247,0.08); border-left-color: var(--accent); }
+  .nav-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Main content */
+  .main { overflow-y: auto; padding: 32px; }
+
+  /* Pages */
+  .page { display: none; animation: fadeIn .2s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Page header */
+  .page-header { margin-bottom: 28px; }
+  .page-title { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; color: var(--text); letter-spacing: -0.03em; margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--muted); }
+
+  /* URL Anatomy display */
+  .url-anatomy-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+  .url-anatomy-label { font-size: 11px; color: var(--muted); font-weight: 500; margin-bottom: 10px; text-transform: uppercase; letter-spacing: .06em; }
+  .url-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    line-height: 2;
+    word-break: break-all;
+    color: var(--muted);
+  }
+  .seg {
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 5px;
+    transition: all .15s;
+    display: inline;
+  }
+  .seg:hover { filter: brightness(1.2); }
+  .seg.active { outline: 2px solid currentColor; outline-offset: 1px; }
+  .seg-domain { color: var(--domain); background: var(--domain-bg); }
+  .seg-a { color: var(--affiliate); background: var(--affiliate-bg); }
+  .seg-c { color: var(--creative); background: var(--creative-bg); }
+  .seg-s { color: var(--subid); background: var(--subid-bg); }
+  .url-sep { color: var(--faint); }
+
+  /* Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .leg { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); cursor: pointer; }
+  .leg:hover .leg-label { color: var(--text); }
+  .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* Detail panel */
+  .detail-panel {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    min-height: 120px;
+    transition: border-color .2s;
+  }
+  .detail-panel.has-content { border-left: 3px solid var(--accent-color, var(--accent)); }
+  .detail-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  .detail-body { font-size: 13px; color: var(--muted); line-height: 1.7; }
+  .detail-example {
+    margin-top: 12px;
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--subid);
+    word-break: break-all;
+  }
+  .detail-placeholder { color: var(--faint); font-style: italic; font-size: 13px; }
+
+  /* Component cards grid */
+  .components-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .comp-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .comp-card:hover { border-color: var(--border-hover); transform: translateY(-1px); }
+  .comp-card.active { border-width: 2px; }
+  .comp-icon { width: 32px; height: 32px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .comp-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+  .comp-desc { font-size: 11px; color: var(--muted); }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px; width: fit-content; }
+  .tab-btn {
+    padding: 7px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { background: var(--surface2); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+
+  /* URL example card */
+  .url-example-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .url-example-desc { font-size: 13px; color: var(--muted); margin-bottom: 12px; line-height: 1.6; }
+  .url-example-url {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--bg);
+    padding: 12px 14px;
+    border-radius: 8px;
+    word-break: break-all;
+    line-height: 1.8;
+  }
+
+  /* Builder page */
+  .builder-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 900px) { .builder-layout { grid-template-columns: 1fr; } .app { grid-template-columns: 1fr; } .sidebar { display: none; } }
+
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; display: block; }
+  .form-input, .form-select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .form-input:focus, .form-select:focus { border-color: rgba(79,195,247,0.4); }
+  .form-input::placeholder { color: var(--faint); }
+  .form-select option { background: var(--surface2); }
+  .form-select { cursor: pointer; }
+
+  .section-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    margin-bottom: 0;
+  }
+  .section-card-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 16px; }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  .output-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    position: sticky;
+    top: 80px;
+  }
+  .output-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; }
+  .output-url {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    word-break: break-all;
+    line-height: 1.8;
+    min-height: 80px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .output-seg-domain { color: var(--domain); }
+  .output-seg-a { color: var(--affiliate); }
+  .output-seg-c { color: var(--creative); }
+  .output-seg-s { color: var(--subid); }
+
+  .copy-btn {
+    width: 100%;
+    padding: 10px;
+    background: rgba(79,195,247,0.1);
+    border: 1px solid rgba(79,195,247,0.3);
+    border-radius: var(--radius);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all .15s;
+  }
+  .copy-btn:hover { background: rgba(79,195,247,0.18); }
+  .copy-btn.copied { background: rgba(129,199,132,0.1); border-color: rgba(129,199,132,0.3); color: var(--affiliate); }
+
+  /* Token chips */
+  .token-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .token-chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: var(--subid-bg);
+    color: var(--subid);
+    border: 1px solid rgba(255,183,77,0.2);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .token-chip:hover { background: rgba(255,183,77,0.2); }
+
+  /* Reference page */
+  .ref-table { width: 100%; border-collapse: collapse; }
+  .ref-table th {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .ref-table td {
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .ref-table tr:last-child td { border-bottom: none; }
+  .ref-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .ref-table td.code { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--subid); }
+  .ref-table td.muted { color: var(--muted); }
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 28px; }
+  .table-wrap-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 600; color: var(--text); padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+
+  /* Subid param rows */
+  .subid-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--subid-bg);
+    color: var(--subid);
+    border: 1px solid rgba(255,183,77,0.15);
+  }
+
+  /* Status bar */
+  .status-bar {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    opacity: 0;
+    transition: opacity .3s;
+    pointer-events: none;
+  }
+  .status-bar.show { opacity: 1; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 2px; }
+
+  /* Responsive hint badges */
+  .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .type-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="logo">dugout<span>.</span></div>
+    <div class="topbar-sep"></div>
+    <div class="topbar-label">Tracking Link Center</div>
+    <div class="topbar-right">
+      <div class="pill">v2.0</div>
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle light/dark mode">☀️</button>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="nav-section">Tools</div>
+    <div class="nav-item active" onclick="nav('builder')">
+      <div class="nav-dot" style="background:#81C784"></div> Link Builder
+    </div>
+    <div class="nav-section">Reference</div>
+    <div class="nav-item" onclick="nav('anatomy')">
+      <div class="nav-dot" style="background:#4FC3F7"></div> Media Tracking Link
+    </div>
+    <div class="nav-item" onclick="nav('ecom')">
+      <div class="nav-dot" style="background:#F48FB1"></div> Ecom Tracking Link
+    </div>
+    <div class="nav-item" onclick="nav('examples')">
+      <div class="nav-dot" style="background:#CE93D8"></div> URL Examples
+    </div>
+    <div class="nav-item" onclick="nav('components')">
+      <div class="nav-dot" style="background:#FFB74D"></div> Component Index
+    </div>
+    <div class="nav-item" onclick="nav('tokens')">
+      <div class="nav-dot" style="background:#F48FB1"></div> Dynamic Tokens
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <!-- PAGE: Anatomy -->
+    <div class="page" id="page-anatomy">
+      <div class="page-header">
+        <div class="page-title">Media Tracking Link</div>
+        <div class="page-sub">Tap any segment of the tracking link to inspect its role and origin in Dugout.</div>
+      </div>
+
+      <div class="url-anatomy-card">
+        <div class="url-anatomy-label">Live tracking link — core components</div>
+        <div class="url-display" id="urlDisplay">
+          <span class="seg seg-domain" data-key="domain" onclick="selectSeg('domain')">https://tracking.spectrum-onlinedeals.com</span><span class="url-sep">/?</span><span class="seg seg-a" data-key="a" onclick="selectSeg('a')">a=144</span><span class="url-sep">&amp;</span><span class="seg seg-c" data-key="c" onclick="selectSeg('c')">c=104294</span><span class="url-sep">&amp;</span><span class="seg seg-s" data-key="s20" onclick="selectSeg('s20')">s20=12345</span>
+        </div>
+        <div class="legend">
+          <div class="leg" onclick="selectSeg('domain')"><div class="leg-dot" style="background:var(--domain)"></div><span class="leg-label">Tracking domain</span></div>
+          <div class="leg" onclick="selectSeg('a')"><div class="leg-dot" style="background:var(--affiliate)"></div><span class="leg-label">Affiliate ID (a=)</span></div>
+          <div class="leg" onclick="selectSeg('c')"><div class="leg-dot" style="background:var(--creative)"></div><span class="leg-label">Creative ID (c=)</span></div>
+          <div class="leg" onclick="selectSeg('s20')"><div class="leg-dot" style="background:var(--subid)"></div><span class="leg-label">s20= Marketing Campaign ID</span></div>
+        </div>
+      </div>
+
+      <div class="detail-panel" id="detailPanel">
+        <div class="detail-placeholder">← Click any colored segment above to inspect it</div>
+      </div>
+
+      <div class="components-grid">
+        <div class="comp-card" id="card-domain" onclick="selectSeg('domain')" style="--c:var(--domain)">
+          <div class="comp-icon" style="background:var(--domain-bg)">🌐</div>
+          <div class="comp-name">Tracking domain</div>
+          <div class="comp-desc">Unique per O&amp;O property</div>
+        </div>
+        <div class="comp-card" id="card-a" onclick="selectSeg('a')" style="--c:var(--affiliate)">
+          <div class="comp-icon" style="background:var(--affiliate-bg)">🔗</div>
+          <div class="comp-name">a= Affiliate ID</div>
+          <div class="comp-desc">Source of traffic</div>
+        </div>
+        <div class="comp-card" id="card-c" onclick="selectSeg('c')" style="--c:var(--creative)">
+          <div class="comp-icon" style="background:var(--creative-bg)">🎯</div>
+          <div class="comp-name">c= Creative ID</div>
+          <div class="comp-desc">Landing page destination</div>
+        </div>
+        <div class="comp-card" id="card-subids" onclick="selectSeg('s1')" style="--c:var(--subid)">
+          <div class="comp-icon" style="background:var(--subid-bg)">📊</div>
+          <div class="comp-name">s1–s100 SUBIDs</div>
+          <div class="comp-desc">Extended tracking data</div>
+        </div>
+        <div class="comp-card" onclick="selectSeg('cpid')" style="--c:var(--subid)">
+          <div class="comp-icon" style="background:var(--subid-bg)">📞</div>
+          <div class="comp-name">cpid= CPID</div>
+          <div class="comp-desc">Marketing Campaign ID</div>
+        </div>
+        <div class="comp-card" id="card-s20" onclick="selectSeg('s20')" style="--c:var(--subid)">
+          <div class="comp-icon" style="background:var(--subid-bg)">📋</div>
+          <div class="comp-name">s20= Campaign ID</div>
+          <div class="comp-desc">CPID passed via SUBID slot</div>
+        </div>
+        <div class="comp-card" onclick="selectSeg('gclid')" style="--c:var(--subid)">
+          <div class="comp-icon" style="background:var(--subid-bg)">G</div>
+          <div class="comp-name">gclid= Google Click</div>
+          <div class="comp-desc">Google's click identifier</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: Ecom Tracking Link -->
+    <div class="page" id="page-ecom">
+      <div class="page-header">
+        <div class="page-title">Ecom Tracking Link</div>
+        <div class="page-sub">Anatomy of an ecommerce tracking link — tap any segment to inspect it.</div>
+      </div>
+
+      <div class="url-anatomy-card">
+        <div class="url-anatomy-label">Live tracking link — Ecom offer example</div>
+        <div class="url-display" id="urlDisplayEcom">
+          <span class="seg seg-domain" data-key="domain" onclick="selectSegEcom('domain')">https://tracking.ecom-example.com</span><span class="url-sep">/?</span><span class="seg seg-a" data-key="a" onclick="selectSegEcom('a')">a=144</span><span class="url-sep">&amp;</span><span class="seg seg-c" data-key="c" onclick="selectSegEcom('c')">c=104294</span><span class="url-sep">&amp;</span><span class="seg seg-s" data-key="s1ecom" onclick="selectSegEcom('s1ecom')">s1=</span><span class="url-sep">&amp;</span><span class="seg seg-s" data-key="s17" onclick="selectSegEcom('s17')">s17=ecomClickout</span>
+        </div>
+        <div class="legend">
+          <div class="leg" onclick="selectSegEcom('domain')"><div class="leg-dot" style="background:var(--domain)"></div><span class="leg-label">Tracking domain</span></div>
+          <div class="leg" onclick="selectSegEcom('a')"><div class="leg-dot" style="background:var(--affiliate)"></div><span class="leg-label">Affiliate ID (a=)</span></div>
+          <div class="leg" onclick="selectSegEcom('c')"><div class="leg-dot" style="background:var(--creative)"></div><span class="leg-label">Creative ID (c=)</span></div>
+          <div class="leg" onclick="selectSegEcom('s1ecom')"><div class="leg-dot" style="background:var(--subid)"></div><span class="leg-label">s1= Landing page value</span></div>
+          <div class="leg" onclick="selectSegEcom('s17')"><div class="leg-dot" style="background:var(--subid)"></div><span class="leg-label">s17= Ecom clickout type</span></div>
+        </div>
+      </div>
+
+      <div class="detail-panel" id="detailPanelEcom">
+        <div class="detail-placeholder">← Click any colored segment above to inspect it</div>
+      </div>
+
+      <div class="components-grid">
+        <div class="comp-card" onclick="selectSegEcom('domain')" style="--c:var(--domain)">
+          <div class="comp-icon" style="background:var(--domain-bg)">🌐</div>
+          <div class="comp-name">Tracking domain</div>
+          <div class="comp-desc">Unique per ecom property</div>
+        </div>
+        <div class="comp-card" onclick="selectSegEcom('a')" style="--c:var(--affiliate)">
+          <div class="comp-icon" style="background:var(--affiliate-bg)">🔗</div>
+          <div class="comp-name">a= Affiliate ID</div>
+          <div class="comp-desc">Traffic source</div>
+        </div>
+        <div class="comp-card" onclick="selectSegEcom('c')" style="--c:var(--creative)">
+          <div class="comp-icon" style="background:var(--creative-bg)">🎯</div>
+          <div class="comp-name">c= Creative ID</div>
+          <div class="comp-desc">Landing page destination</div>
+        </div>
+        <div class="comp-card" onclick="selectSegEcom('s17')" style="--c:var(--subid)">
+          <div class="comp-icon" style="background:var(--subid-bg)">🛒</div>
+          <div class="comp-name">s17= Clickout type</div>
+          <div class="comp-desc">Ecom clickout identifier</div>
+        </div>
+        <div class="comp-card" onclick="selectSegEcom('s1ecom')" style="--c:var(--subid)">
+          <div class="comp-icon" style="background:var(--subid-bg)">📌</div>
+          <div class="comp-name">s1= Landing page value</div>
+          <div class="comp-desc">Passed from landing page into ecom</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: Builder -->
+    <div class="page active" id="page-builder">
+      <div class="page-header">
+        <div class="page-title">Link Builder</div>
+        <div class="page-sub">Configure each component to generate a properly structured tracking link.</div>
+      </div>
+
+      <div class="builder-layout">
+        <div>
+          <div class="section-card" style="margin-bottom:16px">
+            <div class="section-card-title">Core components</div>
+            <div class="form-group">
+              <label class="form-label">Tracking domain</label>
+              <select class="form-select" id="b-domain" onchange="buildLink()">
+                <option value="">— Select a tracking domain —</option>
+                <optgroup label="Residential">
+                  <option value="tracking.spectrum-onlinedeals.com">Spectrum — tracking.spectrum-onlinedeals.com</option>
+                  <option value="www.viasat.com/cf/tracking">Viasat — www.viasat.com/cf/tracking</option>
+                  <option value="tracking.homesecuritysystems.net">Home Security Systems — tracking.homesecuritysystems.net</option>
+                  <option value="www.adt.com/cf/tracking">ADT — www.adt.com/cf/tracking</option>
+                  <option value="tracking.inmyarea.com">InMyArea — tracking.inmyarea.com</option>
+                </optgroup>
+                <optgroup label="Optimum">
+                  <option value="tracking.optimumspecials.com">Optimum Specials — tracking.optimumspecials.com</option>
+                  <option value="tracking.optimuminternetservice.com">Optimum Internet — tracking.optimuminternetservice.com</option>
+                  <option value="tracking.optimum-business.com">Optimum Business — tracking.optimum-business.com</option>
+                </optgroup>
+                <optgroup label="Insurance">
+                  <option value="tracking.autoinsurance.com">Auto Insurance — tracking.autoinsurance.com</option>
+                </optgroup>
+                <optgroup label="B2B">
+                  <option value="tracking.forabusinessloans.com">Fora Business Loans — tracking.forabusinessloans.com</option>
+                </optgroup>
+                <optgroup label="Other">
+                  <option value="tracking.centerfield.com">Centerfield (legacy) — tracking.centerfield.com</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Affiliate ID (a=)</label>
+              <select class="form-select" id="b-a" onchange="buildLink()">
+                <option value="">— Select an affiliate —</option>
+                <optgroup label="Centerfield (Internal)">
+                  <option value="144">144 — Google Search (SEM)</option>
+                  <option value="241">241 — Bing / Microsoft Ads</option>
+                  <option value="337">337 — Facebook</option>
+                </optgroup>
+                <optgroup label="Residential Partners">
+                  <option value="101777">101777 — ATT</option>
+                  <option value="101887">101887 — Affiliate (Landing Page)</option>
+                  <option value="102028">102028 — AG Media</option>
+                </optgroup>
+                <optgroup label="Other">
+                  <option value="custom">Other (enter manually below)</option>
+                </optgroup>
+              </select>
+              <input class="form-input" id="b-a-custom" placeholder="Enter affiliate ID manually" oninput="buildLink()" style="margin-top:8px;display:none">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Creative ID (c=)</label>
+              <input class="form-input" id="b-c" placeholder="e.g. 104294" oninput="buildLink()">
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-card-title">Additional parameters</div>
+            <div class="form-group">
+              <label class="form-label">s20= Marketing Campaign ID (CPID)</label>
+              <input class="form-input" id="b-s20" placeholder="e.g. 12345" oninput="buildLink()">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Custom parameter (optional)</label>
+              <input class="form-input" id="b-custom" placeholder="e.g. s1=#clkid#&s4=#s4#" oninput="buildLink()">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="output-card">
+            <div class="output-label">Generated tracking link</div>
+            <div class="output-url" id="outputUrl">
+              <span style="color:var(--faint);font-style:italic;font-size:12px">Fill in the form to generate your tracking link…</span>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:14px">
+              <button class="copy-btn" id="testBtn" onclick="testLink()" style="flex:1;background:rgba(102,187,106,0.08);border-color:rgba(102,187,106,0.35);color:#66BB6A">Test tracking link</button>
+              <button class="copy-btn" id="copyBtn" onclick="copyLink()" style="flex:1">Copy tracking link</button>
+            </div>
+            <div id="testResult" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;background:rgba(102,187,106,0.1);border:1px solid rgba(102,187,106,0.3);font-size:12px;color:#66BB6A;display:none">
+              ✅ Your tracking link has successfully redirected to the landing page!
+            </div>
+            <hr class="divider">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em">Component breakdown</div>
+            <div id="outputBreakdown" style="font-size:12px;color:var(--muted);line-height:2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: Examples -->
+    <div class="page" id="page-examples">
+      <div class="page-header">
+        <div class="page-title">URL Examples</div>
+        <div class="page-sub">Real tracking link patterns used across Centerfield's owned and operated properties.</div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="setExTab('direct',this)">Direct offer</button>
+        <button class="tab-btn" onclick="setExTab('parent',this)">Parent offer</button>
+        <button class="tab-btn" onclick="setExTab('child',this)">Child offer</button>
+        <button class="tab-btn" onclick="setExTab('media',this)">Media template</button>
+      </div>
+      <div id="exTabContent"></div>
+    </div>
+
+    <!-- PAGE: Component Index -->
+    <div class="page" id="page-components">
+      <div class="page-header">
+        <div class="page-title">Component Index</div>
+        <div class="page-sub">Every Dugout object involved in building a tracking link, and where to find it.</div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-wrap-title"><span style="color:var(--domain);font-size:12px">●</span> Tracking Center objects</div>
+        <table class="ref-table">
+          <thead><tr><th>Object</th><th>Definition</th><th>Used in link as</th></tr></thead>
+          <tbody>
+            <tr><td>Offer</td><td class="muted">A campaign set up for advertisers/clients + affiliates. Three types: Direct, Parent, Child.</td><td class="code">—</td></tr>
+            <tr><td>Affiliate ID</td><td class="muted">Unique ID for the traffic source (affiliate). Set in Tracking Center.</td><td class="code">a=144</td></tr>
+            <tr><td>Creative ID</td><td class="muted">Unique ID for the creative, which maps to an Offer Contract (the landing page URL).</td><td class="code">c=104294</td></tr>
+            <tr><td>Offer Contract</td><td class="muted">The actual landing page URL with parameters. Only active when mapped to a Creative ID.</td><td class="code">Destination URL</td></tr>
+            <tr><td>Marketing Campaign ID (CPID)</td><td class="muted">Appended to tracking URLs for call routing. Three types: Transfer, Callback, Fallback.</td><td class="code">cpid=#s20#</td></tr>
+            <tr><td>SUBID (s1–s100)</td><td class="muted">Predefined parameters for storing click data: keywords, ad groups, device, click IDs, etc.</td><td class="code">s1=, s2=, …</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-wrap-title"><span style="color:var(--subid);font-size:12px">●</span> Ring Center objects</div>
+        <table class="ref-table">
+          <thead><tr><th>Object</th><th>Definition</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Dynamic Ringpool</td><td class="muted">Session-based pool of phone numbers — generates a unique number per visitor session.</td><td class="muted">Requires a fallback CPID</td></tr>
+            <tr><td>1-to-1 Ringpool</td><td class="muted">Single fixed phone number. Used for fallback numbers or affiliate hardcoded pages.</td><td class="muted">No dynamic generation</td></tr>
+            <tr><td>Custom Native</td><td class="muted">Hybrid — multiple numbers but not session-based. Assigned by predefined attributes.</td><td class="muted">Rare use case</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-wrap-title"><span style="color:var(--affiliate);font-size:12px">●</span> Post Center + Datalot</div>
+        <table class="ref-table">
+          <thead><tr><th>Parameter</th><th>Definition</th><th>Datalot field</th></tr></thead>
+          <tbody>
+            <tr><td>Post Configuration</td><td class="muted">Forwards web form data: Landing Page → Dugout → Datalot API.</td><td class="code">—</td></tr>
+            <tr><td>access_key</td><td class="muted">Unique value generated and maintained by the Datalot API.</td><td class="code">access_key</td></tr>
+            <tr><td>source_id</td><td class="muted">Datalot traffic source ID — analogous to Dugout's Affiliate ID.</td><td class="code">source_id</td></tr>
+            <tr><td>product_id</td><td class="muted">Datalot product ID — analogous to Dugout's vertical.</td><td class="code">product_id</td></tr>
+            <tr><td>campaign_id</td><td class="muted">Source Contract ID in Datalot — analogous to Dugout's Offer ID.</td><td class="code">campaign_id</td></tr>
+            <tr><td>transfer_destination</td><td class="muted">Transfer phone number from the Transfer CPID — used for outbound dial transfers.</td><td class="code">transfer_destination</td></tr>
+            <tr><td>callback_number</td><td class="muted">Callback phone number from the Callback CPID — used when customer doesn't answer.</td><td class="code">callback_number</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PAGE: Tokens -->
+    <div class="page" id="page-tokens">
+      <div class="page-header">
+        <div class="page-title">Dynamic Tokens</div>
+        <div class="page-sub">Centerfield tokens are wrapped in <code style="font-family:'DM Mono',monospace;color:var(--subid);font-size:12px">#</code> — replaced in real time when a user clicks the link.</div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-wrap-title">Dugout dynamic tokens</div>
+        <table class="ref-table">
+          <thead><tr><th>Token</th><th>Replaced with</th><th>Common SUBID slot</th></tr></thead>
+          <tbody>
+            <tr><td class="code">#clkid#</td><td class="muted">Dugout's unique click ID for this session</td><td><span class="subid-badge">s1</span></td></tr>
+            <tr><td class="code">#reqid#</td><td class="muted">Unique request ID for the click</td><td><span class="subid-badge">s1</span></td></tr>
+            <tr><td class="code">#s1#–#s100#</td><td class="muted">Values passed through corresponding SUBID parameters</td><td><span class="subid-badge">varies</span></td></tr>
+            <tr><td class="code">#affid#</td><td class="muted">Affiliate ID — used in parent/child offer destination URLs</td><td class="muted">Destination URL</td></tr>
+            <tr><td class="code">#cid#</td><td class="muted">Creative ID — used in parent/child destination URLs</td><td class="muted">Destination URL</td></tr>
+            <tr><td class="code">#s3#</td><td class="muted">Dynamic phone number generated by the ringpool</td><td><span class="subid-badge">s3 / phone=</span></td></tr>
+            <tr><td class="code">#s4#</td><td class="muted">Device type (c = computer, m = mobile)</td><td><span class="subid-badge">s4</span></td></tr>
+            <tr><td class="code">#s20#</td><td class="muted">Marketing Campaign ID (CPID) passed from media template</td><td><span class="subid-badge">s20 / cpid=</span></td></tr>
+            <tr><td class="code">#offer_id#</td><td class="muted">The Dugout Offer ID for this campaign</td><td class="muted">Post config</td></tr>
+            <tr><td class="code">#gclid#</td><td class="muted">Google's click ID (auto-appended by Google Ads)</td><td><span class="subid-badge">gclid=</span></td></tr>
+            <tr><td class="code">#transfer_number#</td><td class="muted">Transfer CPID phone number (used in Datalot post config)</td><td class="muted">Post config</td></tr>
+            <tr><td class="code">#ocid#</td><td class="muted">Offer Contract ID for destination routing</td><td><span class="subid-badge">ocid=</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-wrap-title">Google ValueTrack tokens (media template)</div>
+        <table class="ref-table">
+          <thead><tr><th>Token</th><th>Replaced with</th><th>Maps to SUBID</th></tr></thead>
+          <tbody>
+            <tr><td class="code">{adgroupid}</td><td class="muted">Google Ad Group ID</td><td><span class="subid-badge">s1</span></td></tr>
+            <tr><td class="code">{keyword}.{targetid}</td><td class="muted">Matching keyword and target ID</td><td><span class="subid-badge">s2</span></td></tr>
+            <tr><td class="code">{matchtype}.{network}.{creative}</td><td class="muted">Match type, network, and ad creative ID</td><td><span class="subid-badge">s3</span></td></tr>
+            <tr><td class="code">{device}</td><td class="muted">Device type: c (computer), m (mobile), t (tablet)</td><td><span class="subid-badge">s4</span></td></tr>
+            <tr><td class="code">{adposition}.{placement}</td><td class="muted">Ad position in results + placement site</td><td><span class="subid-badge">s5</span></td></tr>
+            <tr><td class="code">{loc_physical_ms}</td><td class="muted">Physical location of the user (Microsoft ID)</td><td><span class="subid-badge">s6</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="status-bar" id="statusBar">Copied to clipboard</div>
+
+<script>
+const segDetails = {
+  domain:{title:"Tracking domain",color:"var(--domain)",body:"A custom domain dedicated to recording every click for this owned & operated property. Since Google's Parallel Tracking mandate (2018), this domain must match the final landing page's domain — meaning each O&O property needs its own dedicated tracking domain. This is why the default Dugout tracking link generator (which uses a single shared domain) isn't used in practice. The ad ops team contacts frontend developers to identify the correct domain per property.",example:"https://tracking.spectrum-onlinedeals.com"},
+  a:{title:"a= — Affiliate ID",color:"var(--affiliate)",body:"Identifies who sent the traffic (the 'affiliate'). In Tracking Center, each affiliate relationship is assigned a unique numeric ID. For Centerfield's own media campaigns, this is typically 144 (Google search). Found in the Offer under Tracking Center — specifically in the Affiliate field when creating or viewing the offer.",example:"a=144"},
+  c:{title:"c= — Creative ID",color:"var(--creative)",body:"Identifies where the click is going — the specific landing page destination. In Tracking Center, a Creative is mapped to an Offer Contract (which holds the actual destination URL with parameters). The c= value is what Dugout uses to look up that Offer Contract and route the click. Found in the Creatives tab of your offer.",example:"c=104294"},
+  s1:{title:"s1= — SUBID: Click + Request ID",color:"var(--subid)",body:"Stores the Dugout click ID and request ID, concatenated together. This is critical for stitching together the full click path. Dynamic tokens #clkid# and #reqid# are replaced in real time. SUBIDs s1–s100 are Centerfield's standard for capturing all click metadata — keywords, ad groups, device, campaign IDs, and more.",example:"s1=#clkid#.#clkid#.#reqid#"},
+  s4:{title:"s4= — SUBID: Device type",color:"var(--subid)",body:"Captures the device the user is on. The token #s4# is replaced at click time with 'c' (computer/desktop), 'm' (mobile), or 't' (tablet). In media templates, this maps from Google's {device} ValueTrack parameter.",example:"s4=#s4#  →  s4=c"},
+  cpid:{title:"cpid= — Marketing Campaign ID",color:"var(--subid)",body:"Appended to tracking URLs to tell Dugout which call routing configuration to use. The key value is used to differentiate the campaigns being set up for a given provider — for example, the CPID is usually an Ad Set ID for Facebook campaigns. In media templates, CPID is passed via the #s20# token.",example:"cpid=#s20#  →  cpid=108659"},
+  gclid:{title:"gclid= — Google Click ID",color:"var(--subid)",body:"Google's auto-generated click identifier, passed through from the search ad. Used for conversion tracking in Google Ads and for building the full customer journey clickstream. The token #gclid# is replaced with Google's actual value at click time.",example:"gclid=#gclid#  →  gclid=EAIaIQob..."},
+  s20:{title:"s20= — Marketing Campaign ID (CPID)",color:"var(--subid)",body:"The s20 SUBID slot carries the Marketing Campaign ID (CPID) — a key value used to differentiate the campaigns being set up for a given provider. For example, the CPID is usually an Ad Set ID for Facebook campaigns. In media templates, a static CPID value is passed through s20 and then forwarded as cpid= in the final redirect URL.",example:"s20=12345  →  cpid=12345 (used to differentiate campaigns per provider)"},
+  s17:{title:"s17= — Ecom Clickout Type",color:"var(--subid)",body:"The s17 SUBID slot is used in ecommerce tracking links to identify the type of clickout event that occurred — for example, whether the user clicked out to an advertiser from a product listing or comparison page. The value 'ecomClickout' flags this click as an ecommerce-originated outbound click, which allows downstream reporting to segment and attribute ecom traffic separately from standard media or lead-gen clicks.",example:"s17=ecomClickout"},
+  s1ecom:{title:"s1= — Landing Page Value",color:"var(--subid)",body:"In ecommerce tracking links, s1 takes in the s1 value that is generated on the landing page and passes it into the ecom clickout. This allows the ecom destination to receive and carry forward the originating session data from the landing page, maintaining continuity across the full click path for accurate attribution and reporting.",example:"s1="}
+};
+
+const exampleTabs = {
+  direct:{label:"Direct offer",desc:"Used when bidding on branded keywords — the customer lands directly on a branded landing page (e.g. Spectrum, ATT, Optimum). Set up with a Direct offer type in Tracking Center. Includes CPID for call routing via Datalot.",url:"https://tracking.spectrum-onlinedeals.com/?a=144&c=104294&s1=#clkid#.#clkid#.#reqid#&agid=#s1#&s4=#s4#&cpid=#s20#&cookiereset=1&gclid=#gclid#&device=#s4#"},
+  parent:{label:"Parent offer URL",desc:"Set up in the PARENT offer — the non-brand listing page that shows multiple advertiser brands. Uses #affid# and #cid# tokens, which Dugout replaces with the actual affiliate and creative IDs at redirect time.",url:"https://www.creditcardprocessing.net/?vn=industryq-redesign-mp5&topchoice=hybrid&cookiereset=1&a=#affid#&c=#cid#&s1=#clkid#.#reqid#&agid=#s1#&s4=#s4#&gclid=#gclid#"},
+  child:{label:"Child offer URL",desc:"Set up in a CHILD offer — an individual brand listed on a parent page. Receives click data passed from the parent. The #s3# token carries the dynamic phone number generated by the ringpool for call attribution.",url:"https://www.merchantoneprocessing.com/v2/?cvn=p1resp-def-v1&ckmid=100849&subid=#clkid#.#s1#&phone=#s3#&post=CCP"},
+  media:{label:"Media tracking template",desc:"What media buyers paste into Google or Bing Ads as the 'Final URL Suffix'. This appends to the ad's final URL and maps Google's ValueTrack parameters into Centerfield's SUBID slots (s1–s6).",url:"a=144&c=101806&s1={adgroupid}&s2={keyword}.{targetid}&s3={matchtype}.{network}.{creative}&s4={device}&s5={adposition}.{placement}&s6={loc_physical_ms}&ls=g&cftrk=1"}
+};
+
+let currentSeg = null;
+let extraTokens = [];
+
+function nav(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(n => {
+    if(n.getAttribute('onclick') && n.getAttribute('onclick').includes(page)) n.classList.add('active');
+  });
+}
+
+function selectSeg(key) {
+  currentSeg = key;
+  document.querySelectorAll('.seg').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.comp-card').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('[data-key="' + key + '"]').forEach(el => el.classList.add('active'));
+  const d = segDetails[key];
+  if (!d) return;
+  const panel = document.getElementById('detailPanel');
+  panel.classList.add('has-content');
+  panel.style.setProperty('--accent-color', d.color);
+  panel.innerHTML = `<div class="detail-title">${d.title}</div><div class="detail-body">${d.body}</div><div class="detail-example">${d.example}</div>`;
+  const cardKey = (key === 's1' || key === 's4' || key === 'cpid' || key === 'gclid') ? 'subids' : key;
+  const card = document.getElementById('card-' + cardKey);
+  if (card) card.classList.add('active');
+}
+
+function selectSegEcom(key) {
+  document.querySelectorAll('#urlDisplayEcom .seg').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('#page-ecom .comp-card').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('#urlDisplayEcom [data-key="' + key + '"]').forEach(el => el.classList.add('active'));
+  const d = segDetails[key];
+  if (!d) return;
+  const panel = document.getElementById('detailPanelEcom');
+  panel.classList.add('has-content');
+  panel.style.setProperty('--accent-color', d.color);
+  panel.innerHTML = `<div class="detail-title">${d.title}</div><div class="detail-body">${d.body}</div><div class="detail-example">${d.example}</div>`;
+}
+
+let currentExTab = 'direct';
+function setExTab(key, btn) {
+  currentExTab = key;
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderExTab();
+}
+function renderExTab() {
+  const t = exampleTabs[currentExTab];
+  document.getElementById('exTabContent').innerHTML = `
+    <div class="url-example-card">
+      <div class="url-example-desc">${t.desc}</div>
+      <div class="url-example-url">${t.url}</div>
+      <div class="badge-row" style="margin-top:12px">
+        <span style="font-size:11px;color:var(--muted)">Tap to load in builder →</span>
+        <span class="type-badge" style="color:var(--accent);border-color:rgba(79,195,247,.3)" onclick="loadInBuilder('${currentExTab}')">Open in builder</span>
+      </div>
+    </div>`;
+}
+renderExTab();
+
+function loadInBuilder(type) {
+  nav('builder');
+  buildLink();
+}
+
+
+function buildLink() {
+  const domainSel = document.getElementById('b-domain').value.trim();
+  const aSel = document.getElementById('b-a').value.trim();
+  const aCustom = document.getElementById('b-a-custom').value.trim();
+  const cVal = document.getElementById('b-c').value.trim();
+  const custom = document.getElementById('b-custom').value.trim();
+
+  // Show/hide custom affiliate input
+  const customInput = document.getElementById('b-a-custom');
+  if (aSel === 'custom') {
+    customInput.style.display = 'block';
+  } else {
+    customInput.style.display = 'none';
+  }
+
+  const aVal = aSel === 'custom' ? aCustom : aSel;
+  const domain = domainSel;
+
+  if (!domain && !aVal && !cVal) {
+    document.getElementById('outputUrl').innerHTML = '<span style="color:var(--faint);font-style:italic;font-size:12px">Fill in the form to generate your tracking link…</span>';
+    document.getElementById('outputBreakdown').innerHTML = '';
+    return;
+  }
+
+  const base = domain ? 'https://' + domain.replace(/^https?:\/\//, '') : 'https://[tracking-domain]';
+  let parts = [];
+  let breakdown = [];
+
+  if (aVal) { parts.push('a=' + aVal); breakdown.push(`<div><span style="color:var(--muted)">a=</span><span style="color:var(--affiliate)">${aVal}</span> <span style="color:var(--faint)">— affiliate ID</span></div>`); }
+  if (cVal) { parts.push('c=' + cVal); breakdown.push(`<div><span style="color:var(--muted)">c=</span><span style="color:var(--creative)">${cVal}</span> <span style="color:var(--faint)">— creative ID → offer contract</span></div>`); }
+
+  const s20Val = document.getElementById('b-s20').value.trim();
+  if (s20Val) { parts.push('s20=' + s20Val); breakdown.push(`<div><span style="color:var(--subid)">s20=</span><span style="color:var(--subid)">${s20Val}</span> <span style="color:var(--faint)">— marketing campaign ID (CPID)</span></div>`); }
+
+  if (custom) {
+    // Parse and show each custom param in breakdown
+    custom.split('&').forEach(p => {
+      p = p.trim();
+      if (p) {
+        parts.push(p);
+        const [k, v] = p.split('=');
+        breakdown.push(`<div><span style="color:var(--subid)">${k}=</span><span style="color:var(--subid)">${v || ''}</span> <span style="color:var(--faint)">— custom parameter</span></div>`);
+      }
+    });
+  }
+
+  const fullUrl = base + '/?' + parts.join('&');
+
+  const domainPart = `<span class="output-seg-domain">${base}</span><span style="color:var(--faint)">/?</span>`;
+  const paramStr = parts.map((p, i) => {
+    let color = 'var(--muted)';
+    if (p.startsWith('a=')) color = 'var(--affiliate)';
+    else if (p.startsWith('c=')) color = 'var(--creative)';
+    else if (!p.startsWith('a=') && !p.startsWith('c=')) color = 'var(--subid)';
+    return `<span style="color:${color}">${p}</span>`;
+  }).join('<span style="color:var(--faint)">&</span>');
+
+  document.getElementById('outputUrl').innerHTML = domainPart + paramStr;
+  document.getElementById('outputBreakdown').innerHTML = breakdown.join('') || '<span style="color:var(--faint)">Add affiliate and creative IDs to see breakdown</span>';
+  document.getElementById('outputUrl').dataset.raw = fullUrl;
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const btn = document.getElementById('themeToggle');
+  if (html.classList.contains('light')) {
+    html.classList.remove('light');
+    btn.textContent = '🌙';
+    localStorage.setItem('theme', 'dark');
+  } else {
+    html.classList.add('light');
+    btn.textContent = '☀️';
+    localStorage.setItem('theme', 'light');
+  }
+}
+
+// Apply saved theme on load
+(function() {
+  const saved = localStorage.getItem('theme');
+  // Default is light — only switch to dark if explicitly saved as dark
+  if (saved === 'dark') {
+    document.documentElement.classList.remove('light');
+  } else {
+    document.documentElement.classList.add('light');
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    const btn = document.getElementById('themeToggle');
+    if (!btn) return;
+    const isDark = !document.documentElement.classList.contains('light');
+    btn.textContent = isDark ? '🌙' : '☀️';
+  });
+})();
+
+function copyLink() {
+  const raw = document.getElementById('outputUrl').dataset.raw;
+  if (!raw) return;
+  navigator.clipboard.writeText(raw).catch(() => {});
+  const btn = document.getElementById('copyBtn');
+  btn.textContent = '✓ Copied!';
+  btn.classList.add('copied');
+  const bar = document.getElementById('statusBar');
+  bar.classList.add('show');
+  setTimeout(() => { btn.textContent = 'Copy tracking link'; btn.classList.remove('copied'); bar.classList.remove('show'); }, 2000);
+}
+
+function testLink() {
+  const raw = document.getElementById('outputUrl').dataset.raw;
+  const result = document.getElementById('testResult');
+  if (!raw) return;
+  result.style.display = 'block';
+  setTimeout(() => { result.style.display = 'none'; }, 4000);
+}
+</script>
+</body>
+</html>
