@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dugout — Tracking Link Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0C0F12; --surface: #141820; --surface2: #1B2130;
+    --border: rgba(255,255,255,0.07); --border-hover: rgba(255,255,255,0.14);
+    --text: #E8ECF2; --muted: #6B7585; --faint: #3A4254;
+    --domain: #4FC3F7; --domain-bg: rgba(79,195,247,0.1);
+    --affiliate: #81C784; --affiliate-bg: rgba(129,199,132,0.1);
+    --creative: #CE93D8; --creative-bg: rgba(206,147,216,0.1);
+    --subid: #FFB74D; --subid-bg: rgba(255,183,77,0.1);
+    --accent: #4FC3F7; --radius: 10px; --radius-lg: 16px;
+  }
+  html.light {
+    --bg: #F0F4F8; --surface: #FFFFFF; --surface2: #E8EDF3;
+    --border: rgba(0,0,0,0.09); --border-hover: rgba(0,0,0,0.16);
+    --text: #1A2233; --muted: #6B7890; --faint: #B0BBC9;
+    --domain: #0288D1; --domain-bg: rgba(2,136,209,0.08);
+    --affiliate: #388E3C; --affiliate-bg: rgba(56,142,60,0.08);
+    --creative: #7B1FA2; --creative-bg: rgba(123,31,162,0.08);
+    --subid: #E65100; --subid-bg: rgba(230,81,0,0.08);
+    --accent: #0288D1;
+  }
+  .theme-toggle {
+    width:34px;height:34px;border-radius:50%;border:1px solid var(--border);
+    background:var(--surface2);color:var(--muted);cursor:pointer;display:flex;
+    align-items:center;justify-content:center;font-size:16px;
+    transition:background .2s,border-color .2s,color .2s,transform .15s;flex-shrink:0;
+  }
+  .theme-toggle:hover{background:var(--border-hover);color:var(--text);transform:scale(1.1);}
+  html.light body{background:var(--bg);color:var(--text);}
+  html.light .form-select option{background:#FFFFFF;color:#1A2233;}
+  html.light .output-url{background:#1A2233;}
+  html.light .status-bar{background:#1A2233;}
+  html.light .detail-example{background:var(--surface2);color:var(--muted);}
+  html.light .url-example-url{background:#1A2233;color:#7EC8E3;}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
+  .app{display:grid;grid-template-columns:240px 1fr;grid-template-rows:60px 1fr;min-height:100vh;}
+  .topbar{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:100;}
+  .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--text);letter-spacing:-0.03em;}
+  .logo span{color:var(--accent);}
+  .topbar-sep{width:1px;height:20px;background:var(--border);}
+  .topbar-label{font-size:12px;color:var(--muted);font-weight:400;}
+  .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+  .pill{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500;background:rgba(79,195,247,0.12);color:var(--accent);border:1px solid rgba(79,195,247,0.25);}
+  .sidebar{background:var(--surface);border-right:1px solid var(--border);padding:20px 0;overflow-y:auto;}
+  .nav-section{padding:0 16px 8px;font-size:10px;font-weight:600;color:var(--faint);letter-spacing:.1em;text-transform:uppercase;margin-top:16px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;color:var(--muted);cursor:pointer;border-radius:0;transition:all .15s;border-left:2px solid transparent;user-select:none;}
+  .nav-item:hover{color:var(--text);background:rgba(255,255,255,0.03);}
+  .nav-item.active{color:var(--text);background:rgba(79,195,247,0.08);border-left-color:var(--accent);}
+  .nav-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .main{overflow-y:auto;padding:32px;}
+  .page{display:none;animation:fadeIn .2s ease;}
+  .page.active{display:block;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  .page-header{margin-bottom:28px;}
+  .page-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:var(--text);letter-spacing:-0.03em;margin-bottom:4px;}
+  .page-sub{font-size:13px;color:var(--muted);}
+  .url-anatomy-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:24px;}
+  .url-anatomy-label{font-size:11px;color:var(--muted);font-weight:500;margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em;}
+  .url-display{font-family:'DM Mono',monospace;font-size:13px;line-height:2;word-break:break-all;color:var(--muted);}
+  .seg{cursor:pointer;padding:2px 4px;border-radius:5px;transition:all .15s;display:inline;}
+  .seg:hover{filter:brightness(1.2);}
+  .seg.active{outline:2px solid currentColor;outline-offset:1px;}
+  .seg-domain{color:var(--domain);background:var(--domain-bg);}
+  .seg-a{color:var(--affiliate);background:var(--affiliate-bg);}
+  .seg-c{color:var(--creative);background:var(--creative-bg);}
+  .seg-s{color:var(--subid);background:var(--subid-bg);}
+  .url-sep{color:var(--faint);}
+  .legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);}
+  .leg{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer;}
+  .leg:hover .leg-label{color:var(--text);}
+  .leg-dot{width:8px;height:8px;border-radius:50%;}
+  .detail-panel{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:24px;min-height:120px;transition:border-color .2s;}
+  .detail-panel.has-content{border-left:3px solid var(--accent-color,var(--accent));}
+  .detail-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px;}
+  .detail-body{font-size:13px;color:var(--muted);line-height:1.7;}
+  .detail-example{margin-top:12px;background:var(--bg);border-radius:8px;padding:10px 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--subid);word-break:break-all;}
+  .detail-placeholder{color:var(--faint);font-style:italic;font-size:13px;}
+  .components-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:28px;}
+  .comp-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;cursor:pointer;transition:all .15s;}
+  .comp-card:hover{border-color:var(--border-hover);transform:translateY(-1px);}
+  .comp-card.active{border-width:2px;}
+  .comp-icon{width:32px;height:32px;border-radius:8px;margin-bottom:10px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+  .comp-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px;}
+  .comp-desc{font-size:11px;color:var(--muted);}
+  .tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:4px;width:fit-content;}
+  .tab-btn{padding:7px 16px;font-size:12px;font-weight:500;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;}
+  .tab-btn:hover{color:var(--text);}
+  .tab-btn.active{background:var(--surface2);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.3);}
+  .url-example-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:16px;}
+  .url-example-desc{font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6;}
+  .url-example-url{font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);background:var(--bg);padding:12px 14px;border-radius:8px;word-break:break-all;line-height:1.8;}
+  .builder-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  @media(max-width:900px){.builder-layout{grid-template-columns:1fr}.app{grid-template-columns:1fr}.sidebar{display:none}}
+  .form-group{margin-bottom:16px;}
+  .form-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;display:block;}
+  .form-select{padding-right:32px!important;background-position:right 10px center!important;}
+  .form-input,.form-select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s;}
+  .form-input:focus,.form-select:focus{border-color:rgba(79,195,247,0.4);}
+  .form-input::placeholder{color:var(--faint);}
+  .form-select option{background:var(--surface2);}
+  .form-select{cursor:pointer;}
+  .section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:0;}
+  .section-card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;color:var(--text);margin-bottom:16px;}
+  .divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
+  .output-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;position:sticky;top:80px;}
+  .output-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;}
+  .output-url{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px;font-family:'DM Mono',monospace;font-size:12px;word-break:break-all;line-height:1.8;min-height:80px;color:var(--muted);margin-bottom:14px;}
+  .output-seg-domain{color:var(--domain);}
+  .output-seg-a{color:var(--affiliate);}
+  .output-seg-c{color:var(--creative);}
+  .output-seg-s{color:var(--subid);}
+  .copy-btn{width:100%;padding:10px;background:rgba(79,195,247,0.1);border:1px solid rgba(79,195,247,0.3);border-radius:var(--radius);color:var(--accent);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+  .copy-btn:hover{background:rgba(79,195,247,0.18);}
+  .copy-btn.copied{background:rgba(129,199,132,0.1);border-color:rgba(129,199,132,0.3);color:var(--affiliate);}
+  .ref-table{width:100%;border-collapse:collapse;}
+  .ref-table th{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface);}
+  .ref-table td{padding:12px 14px;font-size:13px;color:var(--text);border-bottom:1px solid var(--border);vertical-align:top;}
+  .ref-table tr:last-child td{border-bottom:none;}
+  .ref-table tr:hover td{background:rgba(255,255,255,0.02);}
+  .ref-table td.code{font-family:'DM Mono',monospace;font-size:12px;color:var(--subid);}
+  .ref-table td.muted{color:var(--muted);}
+  .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:28px;}
+  .table-wrap-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;color:var(--text);padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+  .subid-badge{font-family:'DM Mono',monospace;font-size:11px;padding:2px 8px;border-radius:4px;background:var(--subid-bg);color:var(--subid);border:1px solid rgba(255,183,77,0.15);}
+  .status-bar{position:fixed;bottom:16px;right:16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:12px;color:var(--muted);opacity:0;transition:opacity .3s;pointer-events:none;}
+  .status-bar.show{opacity:1;}
+  ::-webkit-scrollbar{width:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--faint);border-radius:2px;}
+  .badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+  .type-badge{font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid;font-weight:500;cursor:pointer;transition:all .15s;}
+  /* Domain filter badge */
+  .creative-filter-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 9px;border-radius:20px;background:rgba(206,147,216,0.12);color:var(--creative);border:1px solid rgba(206,147,216,0.25);margin-top:5px;}
+  .creative-filter-badge .clear-filter{cursor:pointer;opacity:0.7;font-size:13px;line-height:1;}
+  .creative-filter-badge .clear-filter:hover{opacity:1;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="logo">dugout<span>.</span></div>
+    <div class="topbar-sep"></div>
+    <div class="topbar-label">Tracking Link Center</div>
+    <div class="topbar-right">
+      <div class="pill">v2.0</div>
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle light/dark mode">☀️</button>
+    </div>
+  </header>
+  <nav class="sidebar">
+    <div class="nav-section">Tools</div>
+    <div class="nav-item active" onclick="nav('builder')"><div class="nav-dot" style="background:#81C784"></div> Link Builder</div>
+    <div class="nav-section">Reference</div>
+    <div class="nav-item" onclick="nav('anatomy')"><div class="nav-dot" style="background:#4FC3F7"></div> Media Tracking Link</div>
+    <div class="nav-item" onclick="nav('ecom')"><div class="nav-dot" style="background:#F48FB1"></div> Ecom Tracking Link</div>
+    <div class="nav-section">Resources</div>
+    <div class="nav-item" onclick="nav('examples')"><div class="nav-dot" style="background:#CE93D8"></div> URL Examples</div>
+    <div class="nav-item" onclick="nav('components')"><div class="nav-dot" style="background:#FFB74D"></div> Component Index</div>
+    <div class="nav-item" onclick="nav('tokens')"><div class="nav-dot" style="background:#F48FB1"></div> Dynamic Tokens</div>
+  </nav>
+  <main class="main">
+
+    <!-- PAGE: Anatomy -->
+    <div class="page" id="page-anatomy">
+      <div class="page-header">
+        <div class="page-title">Media Tracking Link</div>
+        <div class="page-sub">Tap any segment of the tracking link to inspect its role and origin in Dugout.</div>
+      </div>
+      <div class="url-anatomy-card">
+        <div class="url-anatomy-label">Live tracking link — core components</div>
+        <div class="url-display" id="urlDisplay">
+          <span class="seg seg-domain" data-key="domain" onclick="selectSeg('domain')">https://tracking.spectrum-onlinedeals.com</span><span class="url-sep">/?</span><span class="seg seg-a" data-key="a" onclick="selectSeg('a')">a=144</span><span class="url-sep">&amp;</span><span class="seg seg-c" data-key="c" onclick="selectSeg('c')">c=104294</span><span class="url-sep">&amp;</span><span class="seg seg-s" data-key="s20" onclick="selectSeg('s20')">s20=12345</span>
+        </div>
+        <div class="legend">
+          <div class="leg" onclick="selectSeg('domain')"><div class="leg-dot" style="background:var(--domain)"></div><span class="leg-label">Tracking domain</span></div>
+          <div class="leg" onclick="selectSeg('a')"><div class="leg-dot" style="background:var(--affiliate)"></div><span class="leg-label">Affiliate ID (a=)</span></div>
+          <div class="leg" onclick="selectSeg('c')"><div class="leg-dot" style="background:var(--creative)"></div><span class="leg-label">Creative ID (c=)</span></div>
+          <div class="leg" onclick="selectSeg('s20')"><div class="leg-dot" style="background:var(--subid)"></div><span class="leg-label">s20= Marketing Campaign ID</span></div>
+        </div>
+      </div>
+      <div class="detail-panel" id="detailPanel"><div class="detail-placeholder">← Click any colored segment above to inspect it</div></div>
+      <div class="components-grid">
+        <div class="comp-card" id="card-domain" onclick="selectSeg('domain')" style="--c:var(--domain)"><div class="comp-icon" style="background:var(--domain-bg)">🌐</div><div class="comp-name">Tracking domain</div><div class="comp-desc">Unique per O&amp;O property</div></div>
+        <div class="comp-card" id="card-a" onclick="selectSeg('a')" style="--c:var(--affiliate)"><div class="comp-icon" style="background:var(--affiliate-bg)">🔗</div><div class="comp-name">a= Affiliate ID</div><div class="comp-desc">Source of traffic</div></div>
+        <div class="comp-card" id="card-c" onclick="selectSeg('c')" style="--c:var(--creative)"><div class="comp-icon" style="background:var(--creative-bg)">🎯</div><div class="comp-name">c= Creative ID</div><div class="comp-desc">Landing page destination</div></div>
+        <div class="comp-card" id="card-subids" onclick="selectSeg('s1')" style="--c:var(--subid)"><div class="comp-icon" style="background:var(--subid-bg)">📊</div><div class="comp-name">s1–s100 SUBIDs</div><div class="comp-desc">Extended tracking data</div></div>
+        <div class="comp-card" onclick="selectSeg('cpid')" style="--c:var(--subid)"><div class="comp-icon" style="background:var(--subid-bg)">📞</div><div class="comp-name">cpid= CPID</div><div class="comp-desc">Marketing Campaign ID</div></div>
+        <div class="comp-card" id="card-s20" onclick="selectSeg('s20')" style="--c:var(--subid)"><div class="comp-icon" style="background:var(--subid-bg)">📋</div><div class="comp-name">s20= Campaign ID</div><div class="comp-desc">CPID passed via SUBID slot</div></div>
+        <div class="comp-card" onclick="selectSeg('gclid')" style="--c:var(--subid)"><div class="comp-icon" style="background:var(--subid-bg)">G</div><div class="comp-name">gclid= Google Click</div><div class="comp-desc">Google's click identifier</div></div>
+      </div>
+    </div>
+
+    <!-- PAGE: Ecom -->
+    <div class="page" id="page-ecom">
+      <div class="page-header">
+        <div class="page-title">Ecom Tracking Link</div>
+        <div class="page-sub">Anatomy of an ecommerce tracking link — tap any segment to inspect it.</div>
+      </div>
+      <div class="url-anatomy-card">
+        <div class="url-anatomy-label">Live tracking link — Ecom offer example</div>
+        <div class="url-display" id="urlDisplayEcom">
+          <span class="seg seg-domain" data-key="domain" onclick="selectSegEcom('domain')">https://tracking.ecom-example.com</span><span class="url-sep">/?</span><span class="seg seg-a" data-key="a" onclick="selectSegEcom('a')">a=144</span><span class="url-sep">&amp;</span><span class="seg seg-c" data-key="c" onclick="selectSegEcom('c')">c=104294</span><span class="url-sep">&amp;</span><span class="seg seg-s" data-key="s1ecom" onclick="selectSegEcom('s1ecom')">s1=</span><span class="url-sep">&amp;</span><span class="seg seg-s" data-key="s17" onclick="selectSegEcom('s17')">s17=ecomClickout</span>
+        </div>
+        <div class="legend">
+          <div class="leg" onclick="selectSegEcom('domain')"><div class="leg-dot" style="background:var(--domain)"></div><span class="leg-label">Tracking domain</span></div>
+          <div class="leg" onclick="selectSegEcom('a')"><div class="leg-dot" style="background:var(--affiliate)"></div><span class="leg-label">Affiliate ID (a=)</span></div>
+          <div class="leg" onclick="selectSegEcom('c')"><div class="leg-dot" style="background:var(--creative)"></div><span class="leg-label">Creative ID (c=)</span></div>
+          <div class="leg" onclick="selectSegEcom('s1ecom')"><div class="leg-dot" style="background:var(--subid)"></div><span class="leg-label">s1= Landing page value</span></div>
+          <div class="leg" onclick="selectSegEcom('s17')"><div class="leg-dot" style="background:var(--subid)"></div><span class="leg-label">s17= Ecom clickout type</span></div>
+        </div>
+      </div>
+      <div class="detail-panel" id="detailPanelEcom"><div class="detail-placeholder">← Click any colored segment above to inspect it</div></div>
+      <div class="components-grid">
+        <div class="comp-card" onclick="selectSegEcom('domain')" style="--c:var(--domain)"><div class="comp-icon" style="background:var(--domain-bg)">🌐</div><div class="comp-name">Tracking domain</div><div class="comp-desc">Unique per ecom property</div></div>
+        <div class="comp-card" onclick="selectSegEcom('a')" style="--c:var(--affiliate)"><div class="comp-icon" style="background:var(--affiliate-bg)">🔗</div><div class="comp-name">a= Affiliate ID</div><div class="comp-desc">Traffic source</div></div>
+        <div class="comp-card" onclick="selectSegEcom('c')" style="--c:var(--creative)"><div class="comp-icon" style="background:var(--creative-bg)">🎯</div><div class="comp-name">c= Creative ID</div><div class="comp-desc">Landing page destination</div></div>
+        <div class="comp-card" onclick="selectSegEcom('s17')" style="--c:var(--subid)"><div class="comp-icon" style="background:var(--subid-bg)">🛒</div><div class="comp-name">s17= Clickout type</div><div class="comp-desc">Ecom clickout identifier</div></div>
+        <div class="comp-card" onclick="selectSegEcom('s1ecom')" style="--c:var(--subid)"><div class="comp-icon" style="background:var(--subid-bg)">📌</div><div class="comp-name">s1= Landing page value</div><div class="comp-desc">Passed from landing page into ecom</div></div>
+      </div>
+    </div>
+
+    <!-- PAGE: Builder -->
+    <div class="page active" id="page-builder">
+      <div class="page-header">
+        <div class="page-title">Link Builder</div>
+        <div class="page-sub">Configure each component to generate a properly structured tracking link.</div>
+      </div>
+      <div class="builder-layout">
+        <div>
+          <div class="section-card" style="margin-bottom:16px">
+            <div class="section-card-title">Core components</div>
+
+            <!-- Tracking domain -->
+            <div class="form-group">
+              <label class="form-label">Tracking domain</label>
+              <div style="position:relative">
+                <input class="form-input" id="b-domain-search" placeholder="Search or select tracking domain…" autocomplete="off"
+                  oninput="filterDomains(this.value)" onfocus="showDomainList()" onblur="setTimeout(hideDomainList,200)"
+                  style="padding-right:28px">
+                <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:11px">▾</span>
+              </div>
+              <input type="hidden" id="b-domain" value="">
+              <div id="domain-list" style="display:none;position:absolute;z-index:999;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-height:220px;overflow-y:auto;width:360px;box-shadow:0 8px 24px rgba(0,0,0,0.2);margin-top:2px"></div>
+              <div id="domain-filter-hint" style="margin-top:5px;display:none"></div>
+            </div>
+
+            <!-- Affiliate -->
+            <div class="form-group">
+              <label class="form-label">Affiliate ID (a=)</label>
+              <div style="position:relative">
+                <input class="form-input" id="b-a-search" placeholder="Search affiliate by name or ID…" autocomplete="off"
+                  oninput="filterAffiliates(this.value)" onfocus="showAffiliateList()" onblur="setTimeout(hideAffiliateList,200)"
+                  style="padding-right:28px">
+                <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:11px">▾</span>
+              </div>
+              <input type="hidden" id="b-a" value="">
+              <div id="affiliate-list" style="display:none;position:absolute;z-index:999;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-height:240px;overflow-y:auto;width:360px;box-shadow:0 8px 24px rgba(0,0,0,0.2);margin-top:2px"></div>
+              <input class="form-input" id="b-a-custom" placeholder="Enter affiliate ID manually" oninput="buildLink()" style="margin-top:8px;display:none">
+            </div>
+
+            <!-- Creative -->
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Creative ID (c=)</label>
+              <div style="position:relative">
+                <input class="form-input" id="b-c-search" placeholder="Search offer name or enter creative ID…" autocomplete="off"
+                  oninput="filterCreatives(this.value)" onfocus="showCreativeList()" onblur="setTimeout(hideCreativeList,200)"
+                  style="padding-right:28px">
+                <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:11px">▾</span>
+              </div>
+              <input type="hidden" id="b-c" value="">
+              <div id="creative-list" style="display:none;position:absolute;z-index:999;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-height:240px;overflow-y:auto;width:360px;box-shadow:0 8px 24px rgba(0,0,0,0.2);margin-top:2px"></div>
+              <!-- Filter badge shown when domain narrows creatives -->
+              <div id="creative-filter-badge" style="margin-top:5px;display:none"></div>
+              <div style="font-size:10px;color:var(--muted);margin-top:5px;font-style:italic">Data sourced from Offers sheet · <a href="https://docs.google.com/spreadsheets/d/12JfuyCWtBKPbXtr6muKTjgyDPF86Dckg4csVLixkVPQ/edit?gid=492103315" target="_blank" style="color:var(--accent)">Open sheet ↗</a></div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-card-title">Additional parameters</div>
+            <div class="form-group">
+              <label class="form-label">s20= Marketing Campaign ID (CPID)</label>
+              <input class="form-input" id="b-s20" placeholder="e.g. 12345" oninput="buildLink()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Add S parameter</label>
+              <select class="form-select" id="b-sparam-key" onchange="handleSParam()">
+                <option value="">— Select a parameter to add —</option>
+                <option value="s7">s7 — Marketing Channel</option>
+                <option value="s15">s15 — Web DNIS (ADT)</option>
+                <option value="s17">s17 — Ecom Clickout</option>
+                <option value="s19">s19 — Source Code (Spectrum)</option>
+              </select>
+            </div>
+            <div id="sparam-value-wrap" style="display:none;margin-bottom:12px">
+              <input class="form-input" id="b-sparam-val" placeholder="Enter value…" oninput="buildLink()" style="margin-top:0">
+            </div>
+            <div id="sparam-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Custom parameter (optional)</label>
+              <input class="form-input" id="b-custom" placeholder="e.g. s1=#clkid#&s4=#s4#" oninput="buildLink()">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="output-card">
+            <div class="output-label">Generated tracking link</div>
+            <div class="output-url" id="outputUrl">
+              <span style="color:var(--faint);font-style:italic;font-size:12px">Fill in the form to generate your tracking link…</span>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:14px">
+              <button class="copy-btn" id="testBtn" onclick="testLink()" style="flex:1;background:rgba(102,187,106,0.08);border-color:rgba(102,187,106,0.35);color:#66BB6A">Open in new tab ↗</button>
+              <button class="copy-btn" id="copyBtn" onclick="copyLink()" style="flex:1">Copy tracking link</button>
+            </div>
+            <div id="testResult" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:12px;line-height:1.7;color:#FFB74D;background:rgba(255,183,77,0.08);border:1px solid rgba(255,183,77,0.3)"></div>
+            <hr class="divider">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em">Component breakdown</div>
+            <div id="outputBreakdown" style="font-size:12px;color:var(--muted);line-height:2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: Examples -->
+    <div class="page" id="page-examples">
+      <div class="page-header">
+        <div class="page-title">URL Examples</div>
+        <div class="page-sub">Real tracking link patterns used across Centerfield's owned and operated properties.</div>
+      </div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="setExTab('direct',this)">Direct offer</button>
+        <button class="tab-btn" onclick="setExTab('parent',this)">Parent offer</button>
+        <button class="tab-btn" onclick="setExTab('child',this)">Child offer</button>
+        <button class="tab-btn" onclick="setExTab('media',this)">Media template</button>
+      </div>
+      <div id="exTabContent"></div>
+    </div>
+
+    <!-- PAGE: Component Index -->
+    <div class="page" id="page-components">
+      <div class="page-header">
+        <div class="page-title">Component Index</div>
+        <div class="page-sub">Every Dugout object involved in building a tracking link, and where to find it.</div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-wrap-title"><span style="color:var(--domain);font-size:12px">●</span> Tracking Center objects</div>
+        <table class="ref-table">
+          <thead><tr><th>Object</th><th>Definition</th><th>Used in link as</th></tr></thead>
+          <tbody>
+            <tr><td>Offer</td><td class="muted">A campaign set up for advertisers/clients + affiliates. Three types: Direct, Parent, Child.</td><td class="code">—</td></tr>
+            <tr><td>Affiliate ID</td><td class="muted">Unique ID for the traffic source (affiliate). Set in Tracking Center.</td><td class="code">a=144</td></tr>
+            <tr><td>Creative ID</td><td class="muted">Unique ID for the creative, which maps to an Offer Contract (the landing page URL).</td><td class="code">c=104294</td></tr>
+            <tr><td>Offer Contract</td><td class="muted">The actual landing page URL with parameters. Only active when mapped to a Creative ID.</td><td class="code">Destination URL</td></tr>
+            <tr><td>Marketing Campaign ID (CPID)</td><td class="muted">Appended to tracking URLs for call routing. Three types: Transfer, Callback, Fallback.</td><td class="code">cpid=#s20#</td></tr>
+            <tr><td>SUBID (s1–s100)</td><td class="muted">Predefined parameters for storing click data: keywords, ad groups, device, click IDs, etc.</td><td class="code">s1=, s2=, …</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-wrap">
+        <div class="table-wrap-title"><span style="color:var(--subid);font-size:12px">●</span> Ring Center objects</div>
+        <table class="ref-table">
+          <thead><tr><th>Object</th><th>Definition</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Dynamic Ringpool</td><td class="muted">Session-based pool of phone numbers — generates a unique number per visitor session.</td><td class="muted">Requires a fallback CPID</td></tr>
+            <tr><td>1-to-1 Ringpool</td><td class="muted">Single fixed phone number. Used for fallback numbers or affiliate hardcoded pages.</td><td class="muted">No dynamic generation</td></tr>
+            <tr><td>Custom Native</td><td class="muted">Hybrid — multiple numbers but not session-based. Assigned by predefined attributes.</td><td class="muted">Rare use case</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-wrap">
+        <div class="table-wrap-title"><span style="color:var(--affiliate);font-size:12px">●</span> Post Center + Datalot</div>
+        <table class="ref-table">
+          <thead><tr><th>Parameter</th><th>Definition</th><th>Datalot field</th></tr></thead>
+          <tbody>
+            <tr><td>Post Configuration</td><td class="muted">Forwards web form data: Landing Page → Dugout → Datalot API.</td><td class="code">—</td></tr>
+            <tr><td>access_key</td><td class="muted">Unique value generated and maintained by the Datalot API.</td><td class="code">access_key</td></tr>
+            <tr><td>source_id</td><td class="muted">Datalot traffic source ID — analogous to Dugout's Affiliate ID.</td><td class="code">source_id</td></tr>
+            <tr><td>product_id</td><td class="muted">Datalot product ID — analogous to Dugout's vertical.</td><td class="code">product_id</td></tr>
+            <tr><td>campaign_id</td><td class="muted">Source Contract ID in Datalot — analogous to Dugout's Offer ID.</td><td class="code">campaign_id</td></tr>
+            <tr><td>transfer_destination</td><td class="muted">Transfer phone number from the Transfer CPID — used for outbound dial transfers.</td><td class="code">transfer_destination</td></tr>
+            <tr><td>callback_number</td><td class="muted">Callback phone number from the Callback CPID — used when customer doesn't answer.</td><td class="code">callback_number</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PAGE: Tokens -->
+    <div class="page" id="page-tokens">
+      <div class="page-header">
+        <div class="page-title">Dynamic Tokens</div>
+        <div class="page-sub">Centerfield tokens are wrapped in <code style="font-family:'DM Mono',monospace;color:var(--subid);font-size:12px">#</code> — replaced in real time when a user clicks the link.</div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-wrap-title">Dugout dynamic tokens</div>
+        <table class="ref-table">
+          <thead><tr><th>Token</th><th>Replaced with</th><th>Common SUBID slot</th></tr></thead>
+          <tbody>
+            <tr><td class="code">#clkid#</td><td class="muted">Dugout's unique click ID for this session</td><td><span class="subid-badge">s1</span></td></tr>
+            <tr><td class="code">#reqid#</td><td class="muted">Unique request ID for the click</td><td><span class="subid-badge">s1</span></td></tr>
+            <tr><td class="code">#s1#–#s100#</td><td class="muted">Values passed through corresponding SUBID parameters</td><td><span class="subid-badge">varies</span></td></tr>
+            <tr><td class="code">#affid#</td><td class="muted">Affiliate ID — used in parent/child offer destination URLs</td><td class="muted">Destination URL</td></tr>
+            <tr><td class="code">#cid#</td><td class="muted">Creative ID — used in parent/child destination URLs</td><td class="muted">Destination URL</td></tr>
+            <tr><td class="code">#s3#</td><td class="muted">Dynamic phone number generated by the ringpool</td><td><span class="subid-badge">s3 / phone=</span></td></tr>
+            <tr><td class="code">#s4#</td><td class="muted">Device type (c = computer, m = mobile)</td><td><span class="subid-badge">s4</span></td></tr>
+            <tr><td class="code">#s20#</td><td class="muted">Marketing Campaign ID (CPID) passed from media template</td><td><span class="subid-badge">s20 / cpid=</span></td></tr>
+            <tr><td class="code">#offer_id#</td><td class="muted">The Dugout Offer ID for this campaign</td><td class="muted">Post config</td></tr>
+            <tr><td class="code">#gclid#</td><td class="muted">Google's click ID (auto-appended by Google Ads)</td><td><span class="subid-badge">gclid=</span></td></tr>
+            <tr><td class="code">#transfer_number#</td><td class="muted">Transfer CPID phone number (used in Datalot post config)</td><td class="muted">Post config</td></tr>
+            <tr><td class="code">#ocid#</td><td class="muted">Offer Contract ID for destination routing</td><td><span class="subid-badge">ocid=</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-wrap">
+        <div class="table-wrap-title">Google ValueTrack tokens (media template)</div>
+        <table class="ref-table">
+          <thead><tr><th>Token</th><th>Replaced with</th><th>Maps to SUBID</th></tr></thead>
+          <tbody>
+            <tr><td class="code">{adgroupid}</td><td class="muted">Google Ad Group ID</td><td><span class="subid-badge">s1</span></td></tr>
+            <tr><td class="code">{keyword}.{targetid}</td><td class="muted">Matching keyword and target ID</td><td><span class="subid-badge">s2</span></td></tr>
+            <tr><td class="code">{matchtype}.{network}.{creative}</td><td class="muted">Match type, network, and ad creative ID</td><td><span class="subid-badge">s3</span></td></tr>
+            <tr><td class="code">{device}</td><td class="muted">Device type: c (computer), m (mobile), t (tablet)</td><td><span class="subid-badge">s4</span></td></tr>
+            <tr><td class="code">{adposition}.{placement}</td><td class="muted">Ad position in results + placement site</td><td><span class="subid-badge">s5</span></td></tr>
+            <tr><td class="code">{loc_physical_ms}</td><td class="muted">Physical location of the user (Microsoft ID)</td><td><span class="subid-badge">s6</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+<div class="status-bar" id="statusBar">Copied to clipboard</div>
+
+<script>
+// ─── SEGMENT DETAILS ───────────────────────────────────────────────────────
+const segDetails = {
+  domain:{title:"Tracking domain",color:"var(--domain)",body:"A custom domain dedicated to recording every click for this owned & operated property. Since Google's Parallel Tracking mandate (2018), this domain must match the final landing page's domain — meaning each O&O property needs its own dedicated tracking domain.",example:"https://tracking.spectrum-onlinedeals.com"},
+  a:{title:"a= — Affiliate ID",color:"var(--affiliate)",body:"Identifies who sent the traffic (the 'affiliate'). In Tracking Center, each affiliate relationship is assigned a unique numeric ID. For Centerfield's own media campaigns, this is typically 144 (Google search).",example:"a=144"},
+  c:{title:"c= — Creative ID",color:"var(--creative)",body:"Identifies where the click is going — the specific landing page destination. In Tracking Center, a Creative is mapped to an Offer Contract (which holds the actual destination URL with parameters).",example:"c=104294"},
+  s1:{title:"s1= — SUBID: Click + Request ID",color:"var(--subid)",body:"Stores the Dugout click ID and request ID. Dynamic tokens #clkid# and #reqid# are replaced in real time.",example:"s1=#clkid#.#clkid#.#reqid#"},
+  s4:{title:"s4= — SUBID: Device type",color:"var(--subid)",body:"Captures the device the user is on. Replaced with 'c' (computer), 'm' (mobile), or 't' (tablet).",example:"s4=#s4#  →  s4=c"},
+  cpid:{title:"cpid= — Marketing Campaign ID",color:"var(--subid)",body:"Appended to tracking URLs to tell Dugout which call routing configuration to use.",example:"cpid=#s20#  →  cpid=108659"},
+  gclid:{title:"gclid= — Google Click ID",color:"var(--subid)",body:"Google's auto-generated click identifier, passed through from the search ad.",example:"gclid=#gclid#  →  gclid=EAIaIQob..."},
+  s20:{title:"s20= — Marketing Campaign ID (CPID)",color:"var(--subid)",body:"The s20 SUBID slot carries the Marketing Campaign ID (CPID). In media templates, a static CPID value is passed through s20 and then forwarded as cpid= in the final redirect URL.",example:"s20=12345  →  cpid=12345"},
+  s17:{title:"s17= — Ecom Clickout Type",color:"var(--subid)",body:"Used in ecommerce tracking links to identify the type of clickout event — e.g. 'ecomClickout' flags this as an ecommerce-originated outbound click.",example:"s17=ecomClickout"},
+  s1ecom:{title:"s1= — Landing Page Value",color:"var(--subid)",body:"In ecommerce tracking links, s1 takes in the value generated on the landing page and passes it into the ecom clickout, maintaining session continuity.",example:"s1="}
+};
+
+// ─── NAV ────────────────────────────────────────────────────────────────────
+function nav(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes(page)) n.classList.add('active');
+  });
+}
+
+// ─── ANATOMY PAGE ────────────────────────────────────────────────────────────
+function selectSeg(key) {
+  document.querySelectorAll('.seg').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.comp-card').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('[data-key="' + key + '"]').forEach(el => el.classList.add('active'));
+  const d = segDetails[key]; if (!d) return;
+  const panel = document.getElementById('detailPanel');
+  panel.classList.add('has-content');
+  panel.style.setProperty('--accent-color', d.color);
+  panel.innerHTML = `<div class="detail-title">${d.title}</div><div class="detail-body">${d.body}</div><div class="detail-example">${d.example}</div>`;
+  const cardKey = (['s1','s4','cpid','gclid'].includes(key)) ? 'subids' : key;
+  const card = document.getElementById('card-' + cardKey);
+  if (card) card.classList.add('active');
+}
+function selectSegEcom(key) {
+  document.querySelectorAll('#urlDisplayEcom .seg').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('#page-ecom .comp-card').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('#urlDisplayEcom [data-key="' + key + '"]').forEach(el => el.classList.add('active'));
+  const d = segDetails[key]; if (!d) return;
+  const panel = document.getElementById('detailPanelEcom');
+  panel.classList.add('has-content');
+  panel.style.setProperty('--accent-color', d.color);
+  panel.innerHTML = `<div class="detail-title">${d.title}</div><div class="detail-body">${d.body}</div><div class="detail-example">${d.example}</div>`;
+}
+
+// ─── EXAMPLES PAGE ───────────────────────────────────────────────────────────
+const exampleTabs = {
+  direct:{label:"Direct offer",desc:"Used when bidding on branded keywords — the customer lands directly on a branded landing page. Set up with a Direct offer type in Tracking Center.",url:"https://tracking.spectrum-onlinedeals.com/?a=144&c=104294&s1=#clkid#.#clkid#.#reqid#&agid=#s1#&s4=#s4#&cpid=#s20#&cookiereset=1&gclid=#gclid#&device=#s4#"},
+  parent:{label:"Parent offer URL",desc:"Set up in the PARENT offer — the non-brand listing page that shows multiple advertiser brands. Uses #affid# and #cid# tokens replaced at redirect time.",url:"https://www.creditcardprocessing.net/?vn=industryq-redesign-mp5&topchoice=hybrid&cookiereset=1&a=#affid#&c=#cid#&s1=#clkid#.#reqid#&agid=#s1#&s4=#s4#&gclid=#gclid#"},
+  child:{label:"Child offer URL",desc:"Set up in a CHILD offer — an individual brand listed on a parent page. The #s3# token carries the dynamic phone number generated by the ringpool.",url:"https://www.merchantoneprocessing.com/v2/?cvn=p1resp-def-v1&ckmid=100849&subid=#clkid#.#s1#&phone=#s3#&post=CCP"},
+  media:{label:"Media tracking template",desc:"What media buyers paste into Google or Bing Ads as the 'Final URL Suffix'. Maps Google's ValueTrack parameters into Centerfield's SUBID slots (s1–s6).",url:"a=144&c=101806&s1={adgroupid}&s2={keyword}.{targetid}&s3={matchtype}.{network}.{creative}&s4={device}&s5={adposition}.{placement}&s6={loc_physical_ms}&ls=g&cftrk=1"}
+};
+let currentExTab = 'direct';
+function setExTab(key, btn) {
+  currentExTab = key;
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderExTab();
+}
+function renderExTab() {
+  const t = exampleTabs[currentExTab];
+  document.getElementById('exTabContent').innerHTML = `<div class="url-example-card"><div class="url-example-desc">${t.desc}</div><div class="url-example-url">${t.url}</div></div>`;
+}
+renderExTab();
+
+// ─── AFFILIATE DATA ──────────────────────────────────────────────────────────
+const ALL_AFFILIATES = [
+  { group:"Centerfield Media Buying", id:"144",    label:"144 — Centerfield MB - Google" },
+  { group:"Centerfield Media Buying", id:"241",    label:"241 — Centerfield MB - Bing Ads" },
+  { group:"Centerfield Media Buying", id:"337",    label:"337 — Centerfield MB - Facebook" },
+  { group:"Centerfield Media Buying", id:"143",    label:"143 — Centerfield Media Buying" },
+  { group:"Centerfield Media Buying", id:"100006", label:"100006 — Centerfield MB - Yahoo Gemini" },
+  { group:"Centerfield Other",        id:"2",      label:"2 — Centerfield SEO" },
+  { group:"Centerfield Other",        id:"138",    label:"138 — Centerfield Email" },
+  { group:"Centerfield Other",        id:"101934", label:"101934 — Centerfield SMS" },
+  { group:"Partners & Publishers",    id:"389",    label:"389 — Consumer-Rankings.com" },
+  { group:"Partners & Publishers",    id:"390",    label:"390 — HomeSecuritySystems.net" },
+  { group:"Partners & Publishers",    id:"388",    label:"388 — Top5.com" },
+  { group:"Partners & Publishers",    id:"101704", label:"101704 — Business.com" },
+  { group:"Partners & Publishers",    id:"101785", label:"101785 — Business.com - Comparison/PPC" },
+  { group:"Partners & Publishers",    id:"101716", label:"101716 — Security.org" },
+  { group:"Partners & Publishers",    id:"101655", label:"101655 — TheSeniorList.com" },
+  { group:"Partners & Publishers",    id:"101699", label:"101699 — SeniorLiving" },
+  { group:"Partners & Publishers",    id:"101777", label:"101777 — ATT" },
+  { group:"Partners & Publishers",    id:"101887", label:"101887 — Affiliate (Landing Page)" },
+  { group:"Partners & Publishers",    id:"102028", label:"102028 — AG Media" },
+];
+
+// ─── DOMAIN DATA — with creativeGroups mapping ───────────────────────────────
+// creativeGroups: which creative groups to show when this domain is selected.
+// Empty array = no filtering (show all).
+const ALL_DOMAINS = [
+  { group:"Spectrum",             value:"tracking.spectrum-onlinedeals.com",        label:"Spectrum",              offerIds:[],                    creativeGroups:[] },
+  { group:"ATT",                  value:"www.att.com/cfd/tracking",                 label:"ATT (att.com)",         offerIds:["102009"],             creativeGroups:["Residential - ATT.com"] },
+  { group:"ATT",                  value:"www.att-promotions.com/tracking",          label:"ATT Promotions",        offerIds:["100704"],             creativeGroups:["Residential - BuyAtt.com"] },
+  { group:"ATT",                  value:"www.att-businessdeals.com/tracking",       label:"ATT Business Deals",    offerIds:["102711"],             creativeGroups:["Business - ATT.com"] },
+  { group:"Viasat",               value:"www.viasat.com/cf/tracking",               label:"Viasat",                offerIds:[],                    creativeGroups:[] },
+  { group:"Optimum",              value:"tracking.optimuminternetservice.com",      label:"Optimum Internet",      offerIds:["103259"],             creativeGroups:["Residential - Optimum"] },
+  { group:"Optimum",              value:"tracking.optimum-business.com",            label:"Optimum Business",      offerIds:["103629"],             creativeGroups:["Business - Optimum SMB"] },
+  { group:"Cox",                  value:"www.buycox.com/tracking",                  label:"Cox (BuyCox)",          offerIds:["100611"],             creativeGroups:["Residential - BuyCox.com"] },
+  { group:"Cox",                  value:"tracking.coxcable-online.com",             label:"Cox Cable Online",      offerIds:["100614"],             creativeGroups:["Residential - CoxCable-Online.com"] },
+  { group:"Cox",                  value:"tracking.getcoxbusiness.com",              label:"Cox Business",          offerIds:["100630"],             creativeGroups:["Business - GetCoxBusiness.com"] },
+  { group:"Brightspeed",          value:"internet.brightspeed.com/tracking",        label:"Brightspeed",           offerIds:[],                    creativeGroups:[] },
+  { group:"Brightspeed",          value:"www.brightspeedinternet.net/tracking",     label:"Brightspeed (alt)",     offerIds:[],                    creativeGroups:[] },
+  { group:"Security",             value:"www.adt.com/cf/tracking",                  label:"ADT",                   offerIds:["103110","103829"],    creativeGroups:["DIRECT - ADT.com","LTV - ADT"] },
+  { group:"Security",             value:"www.adtsecuritysystem.com/tracking",       label:"ADT Security System",   offerIds:["103110","103829"],    creativeGroups:["DIRECT - ADT.com","LTV - ADT"] },
+  { group:"Security",             value:"tracking.homesecuritysystems.net",         label:"Home Security Systems", offerIds:["103110"],             creativeGroups:["DIRECT - ADT.com"] },
+  { group:"Internet Aggregators", value:"analytics.broadbandnow.com",               label:"BroadbandNow",          offerIds:["101205","101208"],    creativeGroups:["Residential - BroadbandNow.com AT&T","Residential - BroadbandNow.com Charter Spectrum"] },
+  { group:"Internet Aggregators", value:"tracking.inmyarea.com",                    label:"InMyArea",              offerIds:["101513"],             creativeGroups:["InMyArea.com (Shadow Parent)"] },
+  { group:"Internet Aggregators", value:"tracking.centerfield.com",                 label:"Centerfield (legacy)",  offerIds:[],                    creativeGroups:[] },
+  { group:"Insurance",            value:"tracking.autoinsurance.com",               label:"Auto Insurance",        offerIds:["102765","103583"],    creativeGroups:["AutoInsurance.com - Parent SEM","Auto - SolidQuote"] },
+  { group:"Insurance",            value:"tracking.home.coverage.net",               label:"Home Coverage",         offerIds:["103586"],             creativeGroups:["Home Insurance - Home.Coverage.Net"] },
+  { group:"Insurance",            value:"tracking.life.coverage.net",               label:"Life Coverage",         offerIds:["103587"],             creativeGroups:["Life Insurance - Life.Coverage.Net"] },
+  { group:"Insurance",            value:"tracking.medicare.coverage.net",           label:"Medicare Coverage",     offerIds:["103646","103813"],    creativeGroups:["Medicare - Medicare.Coverage.Net","MedicarePlanUSA.com - Humana"] },
+  { group:"B2B",                  value:"www.business.com/tracking",                label:"Business.com",          offerIds:["103417","103418"],    creativeGroups:["Clover - Brand","Clover - NB"] },
+  { group:"B2B",                  value:"tracking.forabusinessloans.com",           label:"Fora Business Loans",   offerIds:[],                    creativeGroups:[] },
+];
+
+// ─── DOMAIN → CREATIVE FILTER ────────────────────────────────────────────────
+let selectedDomainGroups = []; // empty = no filter
+
+function getDomainGroups(domainValue) {
+  const entry = ALL_DOMAINS.find(d => d.value === domainValue);
+  return entry ? entry.creativeGroups : [];
+}
+
+function getFilteredCreatives(searchQuery) {
+  let pool = ALL_CREATIVES;
+  // Apply domain group filter if active
+  if (selectedDomainGroups.length > 0) {
+    pool = pool.filter(c => selectedDomainGroups.includes(c.group));
+  }
+  // Apply search filter
+  if (searchQuery) {
+    const lower = searchQuery.toLowerCase();
+    pool = pool.filter(c => c.label.toLowerCase().includes(lower) || c.id.includes(lower));
+  }
+  return pool;
+}
+
+function updateCreativeFilterBadge() {
+  const badge = document.getElementById('creative-filter-badge');
+  if (!badge) return;
+  if (selectedDomainGroups.length === 0) {
+    badge.style.display = 'none';
+    badge.innerHTML = '';
+    return;
+  }
+  const count = getFilteredCreatives('').length;
+  const groupLabel = selectedDomainGroups.length === 1
+    ? selectedDomainGroups[0]
+    : selectedDomainGroups.length + ' groups';
+  badge.style.display = 'block';
+  badge.innerHTML = `<span class="creative-filter-badge">
+    🎯 Filtered to <strong>${count} creatives</strong> matching selected domain
+    — <em style="opacity:0.8">${groupLabel}</em>
+    <span class="clear-filter" onclick="clearDomainFilter()" title="Show all creatives">✕</span>
+  </span>`;
+}
+
+function clearDomainFilter() {
+  selectedDomainGroups = [];
+  updateCreativeFilterBadge();
+  // Re-render creative list with no filter
+  const q = document.getElementById('b-c-search').value;
+  buildCreativeList(getFilteredCreatives(q));
+}
+
+// ─── DOMAIN DROPDOWN ─────────────────────────────────────────────────────────
+function renderDomainList(filter) {
+  const list = document.getElementById('domain-list'); if (!list) return;
+  const q = (filter || '').toLowerCase();
+  const filtered = q ? ALL_DOMAINS.filter(d =>
+    d.value.toLowerCase().includes(q) ||
+    d.group.toLowerCase().includes(q) ||
+    d.label.toLowerCase().includes(q) ||
+    (d.offerIds && d.offerIds.some(id => id.includes(q)))
+  ) : ALL_DOMAINS;
+  if (!filtered.length) { list.innerHTML = '<div style="padding:10px 14px;color:var(--muted);font-size:12px">No domains found</div>'; return; }
+  const groups = {};
+  filtered.forEach(d => { if (!groups[d.group]) groups[d.group] = []; groups[d.group].push(d); });
+  let html = '';
+  Object.entries(groups).forEach(([grp, vals]) => {
+    html += `<div style="padding:6px 12px 2px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--border);background:rgba(79,195,247,0.12)">${grp}</div>`;
+    vals.forEach(d => {
+      const v = d.value;
+      const dotIdx = v.indexOf('.');
+      const prefix = dotIdx > -1 ? v.slice(0, dotIdx) : v;
+      const rest = dotIdx > -1 ? v.slice(dotIdx) : '';
+      const hasFilter = d.creativeGroups && d.creativeGroups.length > 0;
+      const offerBadges = (d.offerIds && d.offerIds.length)
+        ? d.offerIds.map(id => `<span style="font-family:monospace;font-size:10px;padding:1px 6px;border-radius:3px;background:var(--subid-bg);color:var(--subid);border:1px solid rgba(255,183,77,0.2);flex-shrink:0">${id}</span>`).join('')
+        : '';
+      html += `<div onclick="selectDomain('${v}')"
+        style="padding:8px 14px;font-size:12px;color:var(--text);cursor:pointer;transition:background .12s;display:flex;align-items:center;gap:8px"
+        onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        <span style="font-family:monospace;color:var(--domain);font-size:11px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px">
+          <span style="font-weight:600">${prefix}</span><span style="opacity:0.7">${rest}</span>
+        </span>
+        <span style="color:var(--muted);font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.label}</span>
+        <span style="display:flex;gap:3px;flex-shrink:0">${offerBadges}</span>
+        ${hasFilter && !offerBadges ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(206,147,216,0.15);color:var(--creative);flex-shrink:0">filtered</span>` : ''}
+      </div>`;
+    });
+  });
+  list.innerHTML = html;
+}
+function filterDomains(val) { renderDomainList(val); showDomainList(); document.getElementById('b-domain').value = ''; buildLink(); }
+function selectDomain(val) {
+  document.getElementById('b-domain-search').value = val;
+  document.getElementById('b-domain').value = val;
+  hideDomainList();
+  // Update creative group filter
+  selectedDomainGroups = getDomainGroups(val);
+  // Clear creative selection if it no longer matches
+  const currentCreativeId = document.getElementById('b-c').value;
+  if (currentCreativeId && selectedDomainGroups.length > 0) {
+    const stillValid = ALL_CREATIVES.find(c => c.id === currentCreativeId && selectedDomainGroups.includes(c.group));
+    if (!stillValid) {
+      document.getElementById('b-c').value = '';
+      document.getElementById('b-c-search').value = '';
+      selectedOfferName = '';
+    }
+  }
+  updateCreativeFilterBadge();
+  buildLink();
+}
+function showDomainList() { renderDomainList(document.getElementById('b-domain-search').value); document.getElementById('domain-list').style.display = 'block'; }
+function hideDomainList() { const l = document.getElementById('domain-list'); if (l) l.style.display = 'none'; }
+
+// ─── AFFILIATE DROPDOWN ──────────────────────────────────────────────────────
+function buildSearchList(items, listId, onSelect) {
+  const list = document.getElementById(listId);
+  if (!list || !items.length) { if (list) list.innerHTML = '<div style="padding:10px 14px;color:var(--muted);font-size:12px">No results found</div>'; return; }
+  const groups = {};
+  items.forEach(d => { if (!groups[d.group]) groups[d.group] = []; groups[d.group].push(d); });
+  let html = '';
+  Object.entries(groups).forEach(([grp, vals]) => {
+    html += `<div style="padding:6px 12px 2px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--border);background:rgba(79,195,247,0.12)">${grp}</div>`;
+    vals.forEach(d => {
+      html += `<div onclick="${onSelect}('${d.id || d.value}','${d.label.replace(/'/g,"\\'")}','${listId}')"
+        style="padding:8px 14px;font-size:12px;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:8px"
+        onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        <span style="font-family:monospace;color:var(--accent);min-width:56px;font-size:11px">${d.id || d.value}</span>
+        <span style="color:var(--muted);font-size:11px">${d.label.replace(/^[^—]*— /,'')}</span>
+      </div>`;
+    });
+  });
+  list.innerHTML = html;
+}
+function filterAffiliates(q) {
+  const lower = q.toLowerCase();
+  const filtered = q ? ALL_AFFILIATES.filter(a => a.label.toLowerCase().includes(lower) || a.id.includes(lower)) : ALL_AFFILIATES;
+  buildSearchList(filtered, 'affiliate-list', 'selectAffiliate');
+  showAffiliateList();
+  document.getElementById('b-a').value = '';
+  buildLink();
+}
+function selectAffiliate(id, label) {
+  document.getElementById('b-a-search').value = id + ' — ' + label.replace(/^[^—]*— /,'');
+  document.getElementById('b-a').value = id;
+  hideAffiliateList();
+  buildLink();
+}
+function showAffiliateList() {
+  const q = document.getElementById('b-a-search').value;
+  buildSearchList(q ? ALL_AFFILIATES.filter(a => a.label.toLowerCase().includes(q.toLowerCase()) || a.id.includes(q)) : ALL_AFFILIATES, 'affiliate-list', 'selectAffiliate');
+  document.getElementById('affiliate-list').style.display = 'block';
+}
+function hideAffiliateList() { const l = document.getElementById('affiliate-list'); if (l) l.style.display = 'none'; }
+
+// ─── CREATIVE DATA ───────────────────────────────────────────────────────────
+const ALL_CREATIVES = [
+  { id:"107801", offerId:"102009", offer:"Homepage",                          group:"Residential - ATT.com",   label:"107801 — Homepage" },
+  { id:"111253", offerId:"102009", offer:"Bundles",                           group:"Residential - ATT.com",   label:"111253 — Bundles" },
+  { id:"107795", offerId:"102009", offer:"Deals",                             group:"Residential - ATT.com",   label:"107795 — Deals" },
+  { id:"110666", offerId:"102009", offer:"SITELINK - Offers",                 group:"Residential - ATT.com",   label:"110666 — SITELINK - Offers" },
+  { id:"107901", offerId:"102009", offer:"SITELINK - Internet-Deals",         group:"Residential - ATT.com",   label:"107901 — SITELINK - Internet-Deals" },
+  { id:"107800", offerId:"102009", offer:"Internet - Managed",                group:"Residential - ATT.com",   label:"107800 — Internet - Managed" },
+  { id:"111268", offerId:"102009", offer:"Fiber - Managed",                   group:"Residential - ATT.com",   label:"111268 — Fiber - Managed" },
+  { id:"111485", offerId:"102009", offer:"Contextualized - Internet - Unmanaged - HINT", group:"Residential - ATT.com", label:"111485 — Contextualized - Internet - Unmanaged - HINT" },
+  { id:"114426", offerId:"102009", offer:"Batting Cage - Los Angeles",        group:"Residential - ATT.com",   label:"114426 — Batting Cage - Los Angeles" },
+  { id:"110660", offerId:"102009", offer:"SITELINK - Fiber",                  group:"Residential - ATT.com",   label:"110660 — SITELINK - Fiber" },
+  { id:"110661", offerId:"102009", offer:"SITELINK - Wifi",                   group:"Residential - ATT.com",   label:"110661 — SITELINK - Wifi" },
+  { id:"114314", offerId:"102009", offer:"SITELINK - Pricing",                group:"Residential - ATT.com",   label:"114314 — SITELINK - Pricing" },
+  { id:"115268", offerId:"102009", offer:"SITELINK - Moving",                 group:"Residential - ATT.com",   label:"115268 — SITELINK - Moving" },
+  { id:"114936", offerId:"102009", offer:"Internet - Chicago",                group:"Residential - ATT.com",   label:"114936 — Internet - Chicago" },
+  { id:"114937", offerId:"102009", offer:"CS - Contact Us - Chicago",         group:"Residential - ATT.com",   label:"114937 — CS - Contact Us - Chicago" },
+  { id:"115000", offerId:"102009", offer:"Internet - Chicago - Air",          group:"Residential - ATT.com",   label:"115000 — Internet - Chicago - Air" },
+  { id:"113677", offerId:"102009", offer:"Contextualized - Internet - Air",   group:"Residential - ATT.com",   label:"113677 — Contextualized - Internet - Air" },
+  { id:"107802", offerId:"102009", offer:"SITELINK - Wireless",               group:"Residential - ATT.com",   label:"107802 — SITELINK - Wireless" },
+  { id:"111584", offerId:"102009", offer:"CS - Contact Us",                   group:"Residential - ATT.com",   label:"111584 — CS - Contact Us" },
+  { id:"115292", offerId:"102009", offer:"CS - Contact Us - Moving",          group:"Residential - ATT.com",   label:"115292 — CS - Contact Us - Moving" },
+  { id:"110667", offerId:"102009", offer:"SITELINK - CS - Contact",           group:"Residential - ATT.com",   label:"110667 — SITELINK - CS - Contact" },
+  { id:"114027", offerId:"102009", offer:"Internet - Nonbrand",               group:"Residential - ATT.com",   label:"114027 — Internet - Nonbrand" },
+  { id:"112716", offerId:"102009", offer:"Non-Brand Internet",                group:"Residential - ATT.com",   label:"112716 — Non-Brand Internet" },
+  { id:"111988", offerId:"102009", offer:"Hypercontextualized-Senior",        group:"Residential - ATT.com",   label:"111988 — Hypercontextualized-Senior" },
+  { id:"114313", offerId:"102009", offer:"SITELINK - Live Agent",             group:"Residential - ATT.com",   label:"114313 — SITELINK - Live Agent" },
+  { id:"114485", offerId:"102009", offer:"Default - SEO",                     group:"Residential - ATT.com",   label:"114485 — Default - SEO" },
+  { id:"105808", offerId:"100704", offer:"BAU - Homepage",                    group:"Residential - BuyAtt.com", label:"105808 — BAU - Homepage" },
+  { id:"107372", offerId:"100704", offer:"BAU - SITELINK - Homepage - Move",  group:"Residential - BuyAtt.com", label:"107372 — BAU - SITELINK - Homepage - Move" },
+  { id:"107534", offerId:"100704", offer:"BAU - SITELINK - Homepage - Bundles-Buy", group:"Residential - BuyAtt.com", label:"107534 — BAU - SITELINK - Homepage - Bundles-Buy" },
+  { id:"106544", offerId:"100704", offer:"BAU - SITELINK - Homepage - Special Offers", group:"Residential - BuyAtt.com", label:"106544 — BAU - SITELINK - Homepage - Special Offers" },
+  { id:"112159", offerId:"100704", offer:"BAU - Spanish",                     group:"Residential - BuyAtt.com", label:"112159 — BAU - Spanish" },
+  { id:"114364", offerId:"100704", offer:"Spanish - Internet",                group:"Residential - BuyAtt.com", label:"114364 — Spanish - Internet" },
+  { id:"112882", offerId:"100704", offer:"Deals",                             group:"Residential - BuyAtt.com", label:"112882 — Deals" },
+  { id:"110537", offerId:"100704", offer:"BAU - Internet",                    group:"Residential - BuyAtt.com", label:"110537 — BAU - Internet" },
+  { id:"104311", offerId:"100704", offer:"Default",                           group:"Residential - BuyAtt.com", label:"104311 — Default" },
+  { id:"114486", offerId:"100704", offer:"Default - SEO",                     group:"Residential - BuyAtt.com", label:"114486 — Default - SEO" },
+  { id:"112381", offerId:"103259", offer:"Default",                           group:"Residential - Optimum",   label:"112381 — Default" },
+  { id:"115273", offerId:"103259", offer:"Demand Gen",                        group:"Residential - Optimum",   label:"115273 — Demand Gen" },
+  { id:"114578", offerId:"103259", offer:"Deals",                             group:"Residential - Optimum",   label:"114578 — Deals" },
+  { id:"114490", offerId:"103259", offer:"TV",                                group:"Residential - Optimum",   label:"114490 — TV" },
+  { id:"114489", offerId:"103259", offer:"Mobile Plans",                      group:"Residential - Optimum",   label:"114489 — Mobile Plans" },
+  { id:"114640", offerId:"103259", offer:"Moving",                            group:"Residential - Optimum",   label:"114640 — Moving" },
+  { id:"113651", offerId:"103259", offer:"Customer Service",                  group:"Residential - Optimum",   label:"113651 — Customer Service" },
+  { id:"114491", offerId:"103259", offer:"Seniors",                           group:"Residential - Optimum",   label:"114491 — Seniors" },
+  { id:"115239", offerId:"103259", offer:"Business",                          group:"Residential - Optimum",   label:"115239 — Business" },
+  { id:"114488", offerId:"103259", offer:"SO - Ecomm",                        group:"Residential - Optimum",   label:"114488 — SO - Ecomm" },
+  { id:"111496", offerId:"103110", offer:"Homepage",                          group:"DIRECT - ADT.com",        label:"111496 — Homepage" },
+  { id:"111499", offerId:"103110", offer:"Home Security",                     group:"DIRECT - ADT.com",        label:"111499 — Home Security" },
+  { id:"111500", offerId:"103110", offer:"Indoor Camera",                     group:"DIRECT - ADT.com",        label:"111500 — Indoor Camera" },
+  { id:"111501", offerId:"103110", offer:"Outdoor Camera",                    group:"DIRECT - ADT.com",        label:"111501 — Outdoor Camera" },
+  { id:"111502", offerId:"103110", offer:"Home Alarm",                        group:"DIRECT - ADT.com",        label:"111502 — Home Alarm" },
+  { id:"111503", offerId:"103110", offer:"Specials",                          group:"DIRECT - ADT.com",        label:"111503 — Specials" },
+  { id:"111504", offerId:"103110", offer:"ADT vs. Simplisafe",                group:"DIRECT - ADT.com",        label:"111504 — ADT vs. Simplisafe" },
+  { id:"111505", offerId:"103110", offer:"ADT vs. Vivint",                    group:"DIRECT - ADT.com",        label:"111505 — ADT vs. Vivint" },
+  { id:"111506", offerId:"103110", offer:"ADT vs. Ring",                      group:"DIRECT - ADT.com",        label:"111506 — ADT vs. Ring" },
+  { id:"111507", offerId:"103110", offer:"ADT vs. Brinks",                    group:"DIRECT - ADT.com",        label:"111507 — ADT vs. Brinks" },
+  { id:"111508", offerId:"103110", offer:"Reviews",                           group:"DIRECT - ADT.com",        label:"111508 — Reviews" },
+  { id:"111509", offerId:"103110", offer:"GEO",                               group:"DIRECT - ADT.com",        label:"111509 — GEO" },
+  { id:"111951", offerId:"103110", offer:"Retargeting",                       group:"DIRECT - ADT.com",        label:"111951 — Retargeting" },
+  { id:"111952", offerId:"103110", offer:"Contact Us",                        group:"DIRECT - ADT.com",        label:"111952 — Contact Us" },
+  { id:"112439", offerId:"103110", offer:"Ecom Shop",                         group:"DIRECT - ADT.com",        label:"112439 — Ecom Shop" },
+  { id:"114716", offerId:"103110", offer:"Fingerprint",                       group:"DIRECT - ADT.com",        label:"114716 — Fingerprint" },
+  { id:"103956", offerId:"100614", offer:"Contact Us",                        group:"Residential - CoxCable-Online.com", label:"103956 — Contact Us" },
+  { id:"103951", offerId:"100614", offer:"Default",                           group:"Residential - CoxCable-Online.com", label:"103951 — Default" },
+  { id:"103952", offerId:"100614", offer:"Offers",                            group:"Residential - CoxCable-Online.com", label:"103952 — Offers" },
+  { id:"103953", offerId:"100614", offer:"Internet",                          group:"Residential - CoxCable-Online.com", label:"103953 — Internet" },
+  { id:"103954", offerId:"100614", offer:"Digital Cable",                     group:"Residential - CoxCable-Online.com", label:"103954 — Digital Cable" },
+  { id:"103955", offerId:"100614", offer:"Deals",                             group:"Residential - CoxCable-Online.com", label:"103955 — Deals" },
+  { id:"103914", offerId:"100611", offer:"Default",                           group:"Residential - BuyCox.com", label:"103914 — Default" },
+  { id:"103923", offerId:"100611", offer:"Contact Us",                        group:"Residential - BuyCox.com", label:"103923 — Contact Us" },
+  { id:"110197", offerId:"102765", offer:"Default",                           group:"AutoInsurance.com - Parent SEM", label:"110197 — Default" },
+  { id:"112897", offerId:"102765", offer:"SEM - Standalone",                  group:"AutoInsurance.com - Parent SEM", label:"112897 — SEM - Standalone" },
+  { id:"112899", offerId:"102765", offer:"SEM - Leadflow Redesign",           group:"AutoInsurance.com - Parent SEM", label:"112899 — SEM - Leadflow Redesign" },
+  { id:"113080", offerId:"103417", offer:"Default",                           group:"Clover - Brand",          label:"113080 — Default" },
+  { id:"113857", offerId:"103417", offer:"Ecom Linkout",                      group:"Clover - Brand",          label:"113857 — Ecom Linkout" },
+  { id:"114008", offerId:"103417", offer:"Restaurant",                        group:"Clover - Brand",          label:"114008 — Restaurant" },
+  { id:"113081", offerId:"103418", offer:"Default",                           group:"Clover - NB",             label:"113081 — Default" },
+  { id:"106683", offerId:"101513", offer:"Default",                           group:"InMyArea.com (Shadow Parent)", label:"106683 — Default" },
+  { id:"107644", offerId:"101513", offer:"SEM",                               group:"InMyArea.com (Shadow Parent)", label:"107644 — SEM" },
+  { id:"107643", offerId:"101513", offer:"SEO",                               group:"InMyArea.com (Shadow Parent)", label:"107643 — SEO" },
+  { id:"104663", offerId:"100747", offer:"Default",                           group:"Residential - ISC",       label:"104663 — Default" },
+  { id:"105562", offerId:"101066", offer:"Default",                           group:"Wireless - AT&T",         label:"105562 — Default" },
+  { id:"105584", offerId:"101066", offer:"Customer Service",                  group:"Wireless - AT&T",         label:"105584 — Customer Service" },
+  { id:"106357", offerId:"101403", offer:"Default",                           group:"Residential - CenturyLinkSavings.com", label:"106357 — Default" },
+  { id:"105955", offerId:"101205", offer:"Default",                           group:"Residential - BroadbandNow.com AT&T", label:"105955 — Default" },
+  { id:"107510", offerId:"101208", offer:"DEF - SEO",                         group:"Residential - BroadbandNow.com Charter Spectrum", label:"107510 — DEF - SEO" },
+  { id:"113854", offerId:"103586", offer:"Default",                           group:"Home Insurance - Home.Coverage.Net", label:"113854 — Default" },
+  { id:"113855", offerId:"103587", offer:"Default",                           group:"Life Insurance - Life.Coverage.Net", label:"113855 — Default" },
+  { id:"114134", offerId:"103646", offer:"Default",                           group:"Medicare - Medicare.Coverage.Net", label:"114134 — Default" },
+  { id:"112200", offerId:"103204", offer:"Default",                           group:"Quotemanage - DIRECT",    label:"112200 — Default" },
+  { id:"113844", offerId:"103583", offer:"Default",                           group:"Auto - SolidQuote",       label:"113844 — Default" },
+  { id:"114680", offerId:"103813", offer:"Default",                           group:"MedicarePlanUSA.com - Humana", label:"114680 — Default" },
+  { id:"109991", offerId:"102711", offer:"Business - Bundle",                 group:"Business - ATT.com",      label:"109991 — Business - Bundle" },
+  { id:"109979", offerId:"102711", offer:"Business - Internet",               group:"Business - ATT.com",      label:"109979 — Business - Internet" },
+  { id:"104006", offerId:"100630", offer:"Default",                           group:"Business - GetCoxBusiness.com", label:"104006 — Default" },
+  { id:"114009", offerId:"103629", offer:"Default",                           group:"Business - Optimum SMB",  label:"114009 — Default" },
+  { id:"114758", offerId:"103829", offer:"Default",                           group:"LTV - ADT",               label:"114758 — Default" },
+  { id:"114569", offerId:"103765", offer:"Default",                           group:"LTV - AT&T",              label:"114569 — Default" },
+  { id:"114709", offerId:"103822", offer:"Default",                           group:"LTV - Spectrum",          label:"114709 — Default" },
+  { id:"114710", offerId:"103823", offer:"Default",                           group:"LTV - Cox",               label:"114710 — Default" },
+  { id:"114921", offerId:"103869", offer:"Default",                           group:"LTV - Optimum",           label:"114921 — Default" },
+];
+
+// ─── CREATIVE DROPDOWN ───────────────────────────────────────────────────────
+let selectedOfferName = '';
+let generatedUrl = '';
+
+function buildCreativeList(items) {
+  const list = document.getElementById('creative-list'); if (!list) return;
+  if (!items.length) {
+    list.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:var(--muted);font-style:italic">No matching offers — type a creative ID to use it directly</div>';
+    return;
+  }
+  const groups = {};
+  items.slice(0, 200).forEach(d => { if (!groups[d.group]) groups[d.group] = []; groups[d.group].push(d); });
+  let html = '';
+  Object.entries(groups).forEach(([grp, vals]) => {
+    const offerIdForGroup = (vals.find(v => v.offerId) || {}).offerId || '';
+    const offerIdBadge = offerIdForGroup ? ` <span style="font-size:10px;font-weight:700;color:var(--muted);opacity:0.7">— Offer ${offerIdForGroup}</span>` : '';
+    html += `<div style="padding:7px 12px 4px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--border);display:flex;align-items:center;background:rgba(79,195,247,0.12)">${grp}${offerIdBadge}</div>`;
+    vals.forEach(d => {
+      const offerSafe = (d.offer || '').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+      html += `<div onclick="selectCreative('${d.id}','${offerSafe}')"
+        style="padding:8px 14px;font-size:12px;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:8px"
+        onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        <span style="font-family:monospace;color:var(--creative);min-width:60px;flex-shrink:0;font-size:11px;font-weight:600">${d.id}</span>
+        <span style="color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${d.offer || 'Creative ' + d.id}</span>
+      </div>`;
+    });
+  });
+  list.innerHTML = html;
+}
+
+function filterCreatives(q) {
+  const filtered = getFilteredCreatives(q);
+  if (!filtered.length && q) {
+    document.getElementById('b-c').value = q;
+    selectedOfferName = '';
+    buildLink();
+  }
+  buildCreativeList(filtered);
+  showCreativeList();
+}
+function selectCreative(id, offerName) {
+  document.getElementById('b-c-search').value = id + ' — ' + offerName;
+  document.getElementById('b-c').value = id;
+  selectedOfferName = offerName;
+  hideCreativeList();
+  buildLink();
+}
+function showCreativeList() {
+  buildCreativeList(getFilteredCreatives(document.getElementById('b-c-search').value));
+  document.getElementById('creative-list').style.display = 'block';
+}
+function hideCreativeList() { const l = document.getElementById('creative-list'); if (l) l.style.display = 'none'; }
+
+// ─── S PARAMS ────────────────────────────────────────────────────────────────
+let sParams = {};
+const sParamLabels = { s7:'Marketing Channel', s15:'Web DNIS', s17:'Ecom Clickout', s19:'Source Code' };
+function handleSParam() {
+  const key = document.getElementById('b-sparam-key').value;
+  const wrap = document.getElementById('sparam-value-wrap');
+  const valInput = document.getElementById('b-sparam-val');
+  if (!key) { wrap.style.display = 'none'; return; }
+  if (key === 's17') {
+    sParams['s17'] = 'ecomClickout';
+    renderSParamChips();
+    document.getElementById('b-sparam-key').value = '';
+    wrap.style.display = 'none';
+    buildLink();
+    return;
+  }
+  wrap.style.display = 'block';
+  valInput.placeholder = 'Enter value for ' + key + '…';
+  valInput.focus();
+  valInput.onkeydown = (e) => { if (e.key === 'Enter') commitSParam(); };
+  valInput.onblur = commitSParam;
+}
+function commitSParam() {
+  const key = document.getElementById('b-sparam-key').value;
+  const val = document.getElementById('b-sparam-val').value.trim();
+  if (!key || !val) return;
+  sParams[key] = val;
+  renderSParamChips();
+  document.getElementById('b-sparam-key').value = '';
+  document.getElementById('b-sparam-val').value = '';
+  document.getElementById('sparam-value-wrap').style.display = 'none';
+  buildLink();
+}
+function removeSParam(key) { delete sParams[key]; renderSParamChips(); buildLink(); }
+function renderSParamChips() {
+  document.getElementById('sparam-chips').innerHTML = Object.entries(sParams).map(([k,v]) =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-family:monospace;background:var(--subid-bg);color:var(--subid);border:1px solid var(--subid-bg)">
+      ${k}=${v} <span onclick="removeSParam('${k}')" style="cursor:pointer;margin-left:2px;opacity:0.7;font-size:13px">&times;</span>
+    </span>`
+  ).join('');
+}
+
+// ─── LINK BUILDER ────────────────────────────────────────────────────────────
+function buildLink() {
+  const domainSel = document.getElementById('b-domain').value.trim();
+  const aSel = document.getElementById('b-a').value.trim();
+  const cVal = document.getElementById('b-c').value.trim() || document.getElementById('b-c-search').value.trim();
+  const custom = document.getElementById('b-custom').value.trim();
+  const customInput = document.getElementById('b-a-custom');
+  if (aSel === 'custom') { customInput.style.display = 'block'; } else { customInput.style.display = 'none'; }
+  const aVal = aSel === 'custom' ? (customInput ? customInput.value.trim() : '') : aSel;
+  const domain = domainSel;
+  if (!domain && !aVal && !cVal) {
+    document.getElementById('outputUrl').innerHTML = '<span style="color:var(--faint);font-style:italic;font-size:12px">Fill in the form to generate your tracking link…</span>';
+    document.getElementById('outputBreakdown').innerHTML = '';
+    return;
+  }
+  const base = domain ? 'https://' + domain.replace(/^https?:\/\//, '') : 'https://[tracking-domain]';
+  let parts = [], breakdown = [];
+  if (aVal) { parts.push('a=' + aVal); breakdown.push(`<div><span style="color:var(--muted)">a=</span><span style="color:var(--affiliate)">${aVal}</span> <span style="color:var(--faint)">— affiliate ID</span></div>`); }
+  if (cVal) {
+    parts.push('c=' + cVal);
+    const offerLabel = selectedOfferName ? `${selectedOfferName}` : cVal;
+    breakdown.push(`<div><span style="color:var(--muted)">c=</span><span style="color:var(--creative)">${cVal}</span> <span style="color:var(--faint)">—</span> <span style="color:var(--creative);font-weight:500">${offerLabel}</span> <span style="color:var(--faint)">→ offer contract</span></div>`);
+  }
+  const s20Val = document.getElementById('b-s20').value.trim();
+  if (s20Val) { parts.push('s20=' + s20Val); breakdown.push(`<div><span style="color:var(--subid)">s20=</span><span style="color:var(--subid)">${s20Val}</span> <span style="color:var(--faint)">— marketing campaign ID (CPID)</span></div>`); }
+  Object.entries(sParams).forEach(([k, v]) => {
+    parts.push(k + '=' + v);
+    breakdown.push(`<div><span style="color:var(--subid)">${k}=</span><span style="color:var(--subid)">${v}</span> <span style="color:var(--faint)">— ${sParamLabels[k] || 'S parameter'}</span></div>`);
+  });
+  if (custom) {
+    custom.split('&').forEach(p => {
+      p = p.trim(); if (!p) return;
+      parts.push(p);
+      const [k, v] = p.split('=');
+      breakdown.push(`<div><span style="color:var(--subid)">${k}=</span><span style="color:var(--subid)">${v||''}</span> <span style="color:var(--faint)">— custom parameter</span></div>`);
+    });
+  }
+  const fullUrl = base + '/?' + parts.join('&');
+  const domainPart = `<span class="output-seg-domain">${base}</span><span style="color:var(--faint)">/?</span>`;
+  const paramStr = parts.map(p => {
+    let color = 'var(--muted)';
+    if (p.startsWith('a=')) color = 'var(--affiliate)';
+    else if (p.startsWith('c=')) color = 'var(--creative)';
+    else color = 'var(--subid)';
+    return `<span style="color:${color}">${p}</span>`;
+  }).join('<span style="color:var(--faint)">&</span>');
+  document.getElementById('outputUrl').innerHTML = domainPart + paramStr;
+  document.getElementById('outputBreakdown').innerHTML = breakdown.join('') || '<span style="color:var(--faint)">Add affiliate and creative IDs to see breakdown</span>';
+  generatedUrl = fullUrl;
+  document.getElementById('outputUrl').dataset.raw = fullUrl;
+}
+
+// ─── THEME ───────────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const btn = document.getElementById('themeToggle');
+  if (html.classList.contains('light')) {
+    html.classList.remove('light'); btn.textContent = '🌙'; localStorage.setItem('theme','dark');
+  } else {
+    html.classList.add('light'); btn.textContent = '☀️'; localStorage.setItem('theme','light');
+  }
+}
+(function() {
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark') document.documentElement.classList.remove('light');
+  else document.documentElement.classList.add('light');
+  document.addEventListener('DOMContentLoaded', function() {
+    const btn = document.getElementById('themeToggle'); if (!btn) return;
+    btn.textContent = !document.documentElement.classList.contains('light') ? '🌙' : '☀️';
+  });
+})();
+
+// ─── COPY ────────────────────────────────────────────────────────────────────
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+}
+function copyLink() {
+  const raw = generatedUrl; if (!raw) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(raw).catch(() => fallbackCopy(raw));
+  else fallbackCopy(raw);
+  const btn = document.getElementById('copyBtn');
+  btn.textContent = '✓ Copied!'; btn.classList.add('copied');
+  const bar = document.getElementById('statusBar'); bar.classList.add('show');
+  setTimeout(() => { btn.textContent = 'Copy tracking link'; btn.classList.remove('copied'); bar.classList.remove('show'); }, 2000);
+}
+
+// ─── TEST LINK ───────────────────────────────────────────────────────────────
+function testLink() {
+  const result = document.getElementById('testResult');
+  if (!generatedUrl) {
+    result.style.cssText = 'display:block;background:rgba(255,183,77,0.08);border:1px solid rgba(255,183,77,0.3);border-radius:8px;padding:10px 14px;font-size:12px;line-height:1.7;color:#FFB74D;margin-top:10px';
+    result.innerHTML = '⚠️ Build a tracking link first.';
+    return;
+  }
+  // Open the tracking link directly in a new tab — real browser request,
+  // no server-side blocking. You'll see the full redirect in the address bar.
+  window.open(generatedUrl, '_blank');
+
+  result.style.cssText = 'display:block;background:rgba(79,195,247,0.07);border:1px solid rgba(79,195,247,0.25);border-radius:8px;padding:10px 14px;font-size:12px;line-height:1.7;color:var(--text);margin-top:10px';
+  result.innerHTML = `
+    <div style="font-weight:600;color:var(--accent);font-size:13px;margin-bottom:4px">↗ Opened in new tab</div>
+    <div style="color:var(--muted);font-size:12px">Watch the address bar — it will show the full redirect chain as it resolves.
+    For a clean test with no cookies, copy the link and paste it into an incognito window
+    <span style="color:var(--faint)">(Ctrl+Shift+N on Windows · ⌘+Shift+N on Mac)</span>.</div>`;
+}
+</script>
+</body>
+</html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
