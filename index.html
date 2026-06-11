@@ -10,11 +10,11 @@
   :root {
     --bg: #0C0F12; --surface: #141820; --surface2: #1B2130;
     --border: rgba(255,255,255,0.07); --border-hover: rgba(255,255,255,0.14);
-    --text: #E8ECF2; --muted: #6B7585; --faint: #3A4254;
-    --domain: #4FC3F7; --domain-bg: rgba(79,195,247,0.1);
-    --affiliate: #81C784; --affiliate-bg: rgba(129,199,132,0.1);
-    --creative: #CE93D8; --creative-bg: rgba(206,147,216,0.1);
-    --subid: #FFB74D; --subid-bg: rgba(255,183,77,0.1);
+    --text: #E8ECF2; --muted: #C8D4E3; --faint: #A0AEBB;
+    --domain: #67D4FF; --domain-bg: rgba(103,212,255,0.1);
+    --affiliate: #B8E6BA; --affiliate-bg: rgba(184,230,186,0.1);
+    --creative: #F5D0FF; --creative-bg: rgba(240,196,248,0.1);
+    --subid: #FFD98A; --subid-bg: rgba(255,217,138,0.1);
     --accent: #4FC3F7; --radius: 10px; --radius-lg: 16px;
   }
   html.light {
@@ -317,9 +317,15 @@
             <div class="output-url" id="outputUrl">
               <span style="color:var(--faint);font-style:italic;font-size:12px">Fill in the form to generate your tracking link…</span>
             </div>
-            <div style="display:flex;gap:10px;margin-top:14px">
-              <button class="copy-btn" id="testBtn" onclick="testLink()" style="flex:1;background:rgba(102,187,106,0.08);border-color:rgba(102,187,106,0.35);color:#66BB6A">Open in new tab ↗</button>
-              <button class="copy-btn" id="copyBtn" onclick="copyLink()" style="flex:1">Copy tracking link</button>
+            <div style="margin-top:14px">
+              <button class="copy-btn" id="incognitoBtn" onclick="incognitoLink()" style="width:100%;background:rgba(149,117,205,0.08);border-color:rgba(149,117,205,0.35);color:#9575CD">Copy Tracking Link</button>
+              <div id="incognitoHint" style="display:none;margin-top:8px;padding:8px 12px;border-radius:6px;background:rgba(149,117,205,0.1);border:1px solid rgba(149,117,205,0.3);font-size:11px;color:#9575CD;line-height:1.6"></div>
+            </div>
+            <div style="margin-top:12px;padding:10px 14px;border-radius:8px;background:rgba(255,183,77,0.07);border:1px solid rgba(255,183,77,0.2);font-size:11px;color:var(--muted);line-height:1.7">
+              <span style="color:#FFB74D;font-weight:700">⚠ Always test tracking links in incognito.</span>
+              Logged-in sessions and cached cookies can mask broken redirects or incorrect landing pages — incognito gives you a clean slate.<br>
+              <span style="color:var(--text);font-weight:600">How to open incognito:</span>
+              &nbsp;<strong style="color:#FFB74D">Mac</strong> — ⌘+Shift+N &nbsp;|&nbsp; <strong style="color:#FFB74D">Windows/Linux</strong> — Ctrl+Shift+N
             </div>
             <div id="testResult" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:12px;line-height:1.7;color:#FFB74D;background:rgba(255,183,77,0.08);border:1px solid rgba(255,183,77,0.3)"></div>
             <hr class="divider">
@@ -536,30 +542,125 @@ const ALL_AFFILIATES = [
 // creativeGroups: which creative groups to show when this domain is selected.
 // Empty array = no filtering (show all).
 const ALL_DOMAINS = [
-  { group:"Spectrum",             value:"tracking.spectrum-onlinedeals.com",        label:"Spectrum",              offerIds:[],                    creativeGroups:[] },
-  { group:"ATT",                  value:"www.att.com/cfd/tracking",                 label:"ATT (att.com)",         offerIds:["102009"],             creativeGroups:["Residential - ATT.com"] },
-  { group:"ATT",                  value:"www.att-promotions.com/tracking",          label:"ATT Promotions",        offerIds:["100704"],             creativeGroups:["Residential - BuyAtt.com"] },
-  { group:"ATT",                  value:"www.att-businessdeals.com/tracking",       label:"ATT Business Deals",    offerIds:["102711"],             creativeGroups:["Business - ATT.com"] },
-  { group:"Viasat",               value:"www.viasat.com/cf/tracking",               label:"Viasat",                offerIds:[],                    creativeGroups:[] },
-  { group:"Optimum",              value:"tracking.optimuminternetservice.com",      label:"Optimum Internet",      offerIds:["103259"],             creativeGroups:["Residential - Optimum"] },
-  { group:"Optimum",              value:"tracking.optimum-business.com",            label:"Optimum Business",      offerIds:["103629"],             creativeGroups:["Business - Optimum SMB"] },
-  { group:"Cox",                  value:"www.buycox.com/tracking",                  label:"Cox (BuyCox)",          offerIds:["100611"],             creativeGroups:["Residential - BuyCox.com"] },
-  { group:"Cox",                  value:"tracking.coxcable-online.com",             label:"Cox Cable Online",      offerIds:["100614"],             creativeGroups:["Residential - CoxCable-Online.com"] },
-  { group:"Cox",                  value:"tracking.getcoxbusiness.com",              label:"Cox Business",          offerIds:["100630"],             creativeGroups:["Business - GetCoxBusiness.com"] },
-  { group:"Brightspeed",          value:"internet.brightspeed.com/tracking",        label:"Brightspeed",           offerIds:[],                    creativeGroups:[] },
-  { group:"Brightspeed",          value:"www.brightspeedinternet.net/tracking",     label:"Brightspeed (alt)",     offerIds:[],                    creativeGroups:[] },
-  { group:"Security",             value:"www.adt.com/cf/tracking",                  label:"ADT",                   offerIds:["103110","103829"],    creativeGroups:["DIRECT - ADT.com","LTV - ADT"] },
-  { group:"Security",             value:"www.adtsecuritysystem.com/tracking",       label:"ADT Security System",   offerIds:["103110","103829"],    creativeGroups:["DIRECT - ADT.com","LTV - ADT"] },
-  { group:"Security",             value:"tracking.homesecuritysystems.net",         label:"Home Security Systems", offerIds:["103110"],             creativeGroups:["DIRECT - ADT.com"] },
-  { group:"Internet Aggregators", value:"analytics.broadbandnow.com",               label:"BroadbandNow",          offerIds:["101205","101208"],    creativeGroups:["Residential - BroadbandNow.com AT&T","Residential - BroadbandNow.com Charter Spectrum"] },
-  { group:"Internet Aggregators", value:"tracking.inmyarea.com",                    label:"InMyArea",              offerIds:["101513"],             creativeGroups:["InMyArea.com (Shadow Parent)"] },
-  { group:"Internet Aggregators", value:"tracking.centerfield.com",                 label:"Centerfield (legacy)",  offerIds:[],                    creativeGroups:[] },
-  { group:"Insurance",            value:"tracking.autoinsurance.com",               label:"Auto Insurance",        offerIds:["102765","103583"],    creativeGroups:["AutoInsurance.com - Parent SEM","Auto - SolidQuote"] },
-  { group:"Insurance",            value:"tracking.home.coverage.net",               label:"Home Coverage",         offerIds:["103586"],             creativeGroups:["Home Insurance - Home.Coverage.Net"] },
-  { group:"Insurance",            value:"tracking.life.coverage.net",               label:"Life Coverage",         offerIds:["103587"],             creativeGroups:["Life Insurance - Life.Coverage.Net"] },
-  { group:"Insurance",            value:"tracking.medicare.coverage.net",           label:"Medicare Coverage",     offerIds:["103646","103813"],    creativeGroups:["Medicare - Medicare.Coverage.Net","MedicarePlanUSA.com - Humana"] },
-  { group:"B2B",                  value:"www.business.com/tracking",                label:"Business.com",          offerIds:["103417","103418"],    creativeGroups:["Clover - Brand","Clover - NB"] },
-  { group:"B2B",                  value:"tracking.forabusinessloans.com",           label:"Fora Business Loans",   offerIds:[],                    creativeGroups:[] },
+  // === SPECTRUM ===
+  { group:"100646 — Residential - Spectrum-onlinedeals.com/ - Direct", value:"tracking.spectrum-onlinedeals.com", label:"Spectrum",            offerIds:["100646"], creativeGroups:["Residential - Spectrum-onlinedeals.com/"] },
+
+  // === AT&T RESIDENTIAL ===
+  { group:"102009 — Residential - ATT.com",                 value:"www.att.com/cfd/tracking",             label:"ATT (att.com)",               offerIds:["102009"], creativeGroups:["Residential - ATT.com"] },
+  { group:"100704 — Residential - BuyAtt.com",              value:"www.att-promotions.com/tracking",      label:"ATT Promotions (P2)",          offerIds:["100704"], creativeGroups:["Residential - BuyAtt.com"] },
+  { group:"102357 — Residential - ATTInternetPlans",        value:"www.att-promotions.com/tracking",      label:"ATT Internet Plans (P3)",      offerIds:["102357"], creativeGroups:["Residential - ATTInternetPlans"] },
+  { group:"102415 — SeniorLiving - AT&T Wireless",          value:"www.att-promotions.com/tracking",      label:"AT&T Wireless (Senior)",       offerIds:["102415"], creativeGroups:["SeniorLiving - AT&T Wireless"] },
+  { group:"101066 — Wireless - AT&T",                       value:"www.attwirelessonline.com/tracking",   label:"ATT Wireless Online",          offerIds:["101066"], creativeGroups:["Wireless - AT&T - attwirelessonline.com"] },
+
+  // === AT&T BUSINESS ===
+  { group:"102711 — Business - ATT.com",                    value:"www.att.com/cfd/tracking",             label:"ATT Business (P1)",            offerIds:["102711"], creativeGroups:["Business - ATT.com"] },
+  { group:"100710 — Business - Att-Businessdeals.com",      value:"www.att.com/cfd/tracking",             label:"ATT Business Deals (P2)",      offerIds:["100710"], creativeGroups:["Business - Att-Businessdeals.com"] },
+  { group:"103631 — Business - AT&T SMB P3",                value:"www.att-promotions.com/tracking",      label:"ATT Business Promotions (P3)", offerIds:["103631"], creativeGroups:["Business - AT&T SMB"] },
+
+  // === VIASAT ===
+  { group:"101451 — Residential - Viasat P1 - Direct",      value:"www.viasat.com/cf/tracking",           label:"Viasat",                      offerIds:["101451"], creativeGroups:["Residential - Viasat P1"] },
+
+  // === OPTIMUM ===
+  { group:"103259 — Residential - Optimum",                 value:"tracking.optimuminternetservice.com",  label:"Optimum Internet",            offerIds:["103259"], creativeGroups:["Residential - Optimum"] },
+  { group:"103629 — Business - Optimum SMB",                value:"tracking.optimum-business.com",        label:"Optimum Business",            offerIds:["103629"], creativeGroups:["Business - Optimum SMB"] },
+
+  // === COX ===
+  { group:"100611 — Residential - BuyCox.com",              value:"www.buycox.com/tracking",              label:"Cox (BuyCox)",                offerIds:["100611"], creativeGroups:["Residential - BuyCox.com"] },
+  { group:"100614 — Residential - CoxCable-Online",         value:"tracking.coxcable-online.com",         label:"Cox Cable Online",            offerIds:["100614"], creativeGroups:["Residential - CoxCable-Online.com"] },
+  { group:"100630 — Business - GetCoxBusiness.com",         value:"tracking.getcoxbusiness.com",          label:"Cox Business",                offerIds:["100630"], creativeGroups:["Business - GetCoxBusiness.com"] },
+
+  // === BRIGHTSPEED ===
+  { group:"103205 — Residential - BrightSpeed - P1 - Direct", value:"internet.brightspeed.com/tracking",  label:"Brightspeed P1",              offerIds:["103205"], creativeGroups:["Residential - BrightSpeed P1"] },
+  { group:"103226 — Residential - BrightSpeed - P2 - Direct", value:"www.brightspeedinternet.net/tracking",label:"Brightspeed P2",             offerIds:["103226"], creativeGroups:["Residential - BrightSpeed P2"] },
+
+  // === VIVINT ===
+  { group:"101930 — Direct - Brand - Vivint P2",                value:"www.vivintdeals.com/tracking",      label:"Vivint P2",                   offerIds:["101930"], creativeGroups:["Direct - Brand - Vivint P2"] },
+
+  // === ADT ===
+  { group:"103110 — DIRECT - ADT.com",                      value:"www.adt.com/cf/tracking",              label:"ADT",                         offerIds:["103110"], creativeGroups:["DIRECT - ADT.com"] },
+  { group:"103110 — DIRECT - ADT.com",                      value:"www.adtsecuritysystem.com/tracking",   label:"ADT Security System",         offerIds:["103110"], creativeGroups:["DIRECT - ADT.com"] },
+  { group:"103110 — DIRECT - ADT.com",                      value:"tracking.homesecuritysystems.net",     label:"Home Security Systems",       offerIds:["103110"], creativeGroups:["DIRECT - ADT.com"] },
+  { group:"103829 — LTV - ADT",                             value:"www.adt.com/cf/tracking",              label:"ADT (LTV)",                   offerIds:["103829"], creativeGroups:["LTV - ADT"] },
+  { group:"103829 — LTV - ADT",                             value:"www.adtsecuritysystem.com/tracking",   label:"ADT Security System (LTV)",   offerIds:["103829"], creativeGroups:["LTV - ADT"] },
+
+  // === ADT NB ===
+  { group:"102910 — DIRECT - ADT.com - NB",                 value:"www.adt.com/cf/tracking",              label:"ADT NB",                      offerIds:["102910"], creativeGroups:["DIRECT - ADT.com - NB"] },
+
+  // === ADT P2 ===
+  { group:"103155 — DIRECT - ADTSecurity.com - P2",         value:"www.adtsecurity.com/tracking",         label:"ADT P2",                      offerIds:["103155"], creativeGroups:["DIRECT - ADTSecurity.com - P2"] },
+
+  // === ADT Health P1 ===
+  { group:"103192 — DIRECT - ADT - Health - Brand",         value:"www.adt.com/cf/bps/health/tracking",   label:"ADT Health P1",               offerIds:["103192"], creativeGroups:["DIRECT - ADT - Health - Brand"] },
+
+  // === ADT Health P2 ===
+  { group:"102599 — ADTMedAlert.com - Direct",              value:"www.adtmedalert.com/tracking",         label:"ADT Health P2",               offerIds:["102599"], creativeGroups:["ADTMedAlert.com - Direct"] },
+
+  // === ADT Health NB ===
+  { group:"103215 — DIRECT - ADT - Health - NB",            value:"www.adt.com/cf/bps/health/tracking",   label:"ADT Health NB",               offerIds:["103215"], creativeGroups:["DIRECT - ADT - Health - NB"] },
+
+  // === ADTSecuritySystem Facebook ===
+  { group:"103430 — ADTSecuritySystem - Facebook",          value:"www.adtsecuritysystem.com/tracking",   label:"ADTSecuritySystem FB",         offerIds:["103430"], creativeGroups:["ADTSecuritySystem - Facebook"] },
+
+  // === ADT Social ===
+  { group:"103507 — DIRECT - ADT.com - Social",             value:"www.adt.com/cf/bps/tracking",          label:"ADT Social",                  offerIds:["103507"], creativeGroups:["DIRECT - ADT.com - Social"] },
+
+  // === SeniorLiving ADTMedAlert ===
+  { group:"102585 — SeniorLiving - ADTMedAlert.com",        value:"www.adtmedalert.com/tracking",         label:"SeniorLiving ADTMedAlert",    offerIds:["102585"], creativeGroups:["SeniorLiving - ADTMedAlert.com"] },
+
+  // === TheSeniorList ADTMedAlert ===
+  { group:"102408 — TheSeniorList - ADTMedAlert.com",       value:"www.adtmedalert.com/tracking",         label:"TheSeniorList ADTMedAlert",   offerIds:["102408"], creativeGroups:["TheSeniorList - ADTMedAlert.com"] },
+
+  // === ADT Health Social ===
+  { group:"103762 — DIRECT - ADT - Health - Social",        value:"www.adt.com/cf/bps/health/tracking",   label:"ADT Health Social",           offerIds:["103762"], creativeGroups:["DIRECT - ADT - Health - Social"] },
+
+  // === ADTSecuritySystem Affiliates ===
+  { group:"102860 — ADTSecuritySystem.com - Affiliates",    value:"www.adtsecuritysystem.com/tracking",   label:"ADTSecuritySystem Affiliates",offerIds:["102860"], creativeGroups:["ADTSecuritySystem - Affiliates"] },
+
+  // === BROADBANDNOW ===
+  { group:"101205 — Residential - BroadbandNow.com AT&T",   value:"analytics.broadbandnow.com",           label:"BroadbandNow (AT&T)",         offerIds:["101205"], creativeGroups:["Residential - BroadbandNow.com AT&T"] },
+  { group:"101208 — Residential - BroadbandNow.com Spectrum",value:"analytics.broadbandnow.com",          label:"BroadbandNow (Spectrum)",     offerIds:["101208"], creativeGroups:["Residential - BroadbandNow.com Charter Spectrum"] },
+
+  // === INMYAREA ===
+  { group:"101513 — InMyArea.com",                          value:"tracking.inmyarea.com",                label:"InMyArea",                    offerIds:["101513"], creativeGroups:["InMyArea.com (Shadow Parent)"] },
+
+  // === CENTERFIELD LEGACY ===
+  { group:"Centerfield (legacy)",                           value:"tracking.centerfield.com",             label:"Centerfield (legacy)",        offerIds:[],         creativeGroups:[] },
+
+  // === AUTO INSURANCE ===
+  { group:"102765 — AutoInsurance.com - Parent SEM",        value:"tracking.autoinsurance.com",           label:"Auto Insurance (SEM)",        offerIds:["102765"], creativeGroups:["AutoInsurance.com - Parent SEM"] },
+  { group:"103543 — AutoInsurance.com - Parent Affiliate",  value:"tracking.autoinsurance.com",           label:"Auto Insurance (Affiliate)",  offerIds:["103543"], creativeGroups:["AutoInsurance.com - Parent Affiliate"] },
+  { group:"103881 — ConsumerVoice - AutoInsurance.com",     value:"tracking.autoinsurance.com",           label:"ConsumerVoice Auto Insurance",offerIds:["103881"], creativeGroups:["ConsumerVoice - AutoInsurance.com"] },
+  { group:"103853 — Auto Insurance - Auto.Coverage.Net",    value:"tracking.autoinsurance.com",           label:"Auto Coverage.Net",           offerIds:["103853"], creativeGroups:["Auto Insurance - Auto.Coverage.Net"] },
+  { group:"103583 — Auto - SolidQuote",                     value:"www.solidquote.com/tracking",          label:"SolidQuote",                  offerIds:["103583"], creativeGroups:["Auto - SolidQuote"] },
+  { group:"103582 — Auto - GetAutoQuote",                   value:"www.getautoquote.co/tracking",         label:"GetAutoQuote",                offerIds:["103582"], creativeGroups:["Auto - GetAutoQuote"] },
+
+  // === HOME INSURANCE ===
+  { group:"103586 — Home Insurance - Home.Coverage.Net",    value:"home.coverage.net/tracking",           label:"Home Coverage (SEM)",         offerIds:["103586"], creativeGroups:["Home Insurance - Home.Coverage.Net"] },
+  { group:"103680 — AFFILIATE - Home.Coverage.Net",         value:"home.coverage.net/tracking",           label:"Home Coverage (Affiliate)",   offerIds:["103680"], creativeGroups:["AFFILIATE - Home.Coverage.Net"] },
+
+  // === LIFE INSURANCE ===
+  { group:"103587 — Life Insurance - Life.Coverage.Net",    value:"life.coverage.net/tracking",           label:"Life Coverage",               offerIds:["103587"], creativeGroups:["Life Insurance - Life.Coverage.Net"] },
+
+  // === HEALTH INSURANCE ===
+  { group:"103655 — Health Insurance - Health.Coverage.Net",value:"health.coverage.net/tracking",         label:"Health Coverage",             offerIds:["103655"], creativeGroups:["Health Insurance - Health.Coverage.Net"] },
+
+  // === MEDICARE ===
+  { group:"103646 — Medicare - Medicare.Coverage.Net",      value:"medicare.coverage.net/tracking",       label:"Medicare Coverage",           offerIds:["103646"], creativeGroups:["Medicare - Medicare.Coverage.Net"] },
+  { group:"103813 — MedicarePlanUSA.com - Humana",          value:"www.medicareplanusa.com/tracking",     label:"MedicarePlanUSA",             offerIds:["103813"], creativeGroups:["MedicarePlanUSA.com - Humana"] },
+  { group:"102904 — Coverage.net - Medicare - Aetna",       value:"www.tracking.coverage.net",            label:"Coverage.net Medicare (Aetna)",offerIds:["102904"],creativeGroups:["Coverage.net - Medicare - Aetna"] },
+  { group:"102903 — Coverage.net - Medicare - Humana",      value:"www.tracking.coverage.net",            label:"Coverage.net Medicare (Humana)",offerIds:["102903"],creativeGroups:["Coverage.net - Medicare - Humana"] },
+
+  // === QUOTEMANAGE ===
+  { group:"103204 — Quotemanage - DIRECT",                  value:"www.quotemanage.com/tracking",         label:"QuoteManage (Direct)",        offerIds:["103204"], creativeGroups:["Quotemanage - DIRECT"] },
+  { group:"103682 — Quotemanage - AFFILIATES",              value:"www.quotemanage.com/tracking",         label:"QuoteManage (Affiliate)",     offerIds:["103682"], creativeGroups:["Quotemanage - AFFILIATES"] },
+  { group:"103820 — SeniorLiving - QuoteManage",            value:"www.quotemanage.com/tracking",         label:"QuoteManage (Senior Living)",  offerIds:["103820"], creativeGroups:["SeniorLiving - QuoteManage"] },
+
+  // === BUSINESS.COM / CLOVER ===
+  { group:"103417 — Clover - Brand",                        value:"www.business.com/tracking",            label:"Business.com (Clover Brand)", offerIds:["103417"], creativeGroups:["Clover - Brand"] },
+  { group:"103418 — Clover - NB",                           value:"www.business.com/tracking",            label:"Business.com (Clover NB)",    offerIds:["103418"], creativeGroups:["Clover - NB"] },
+
+  // === FORA ===
+  { group:"Fora Business Loans",                            value:"tracking.forabusinessloans.com",       label:"Fora Business Loans",         offerIds:[],         creativeGroups:[] },
 ];
 
 // ─── DOMAIN → CREATIVE FILTER ────────────────────────────────────────────────
@@ -818,29 +919,227 @@ const ALL_CREATIVES = [
   { id:"114709", offerId:"103822", offer:"Default",                           group:"LTV - Spectrum",          label:"114709 — Default" },
   { id:"114710", offerId:"103823", offer:"Default",                           group:"LTV - Cox",               label:"114710 — Default" },
   { id:"114921", offerId:"103869", offer:"Default",                           group:"LTV - Optimum",           label:"114921 — Default" },
+
+  // === SPECTRUM (100646) ===
+  { id:"104027", offerId:"100646", offer:"PARENT - Bundles",                  group:"Residential - Spectrum-onlinedeals.com/", label:"104027 — PARENT - Bundles" },
+  { id:"113232", offerId:"100646", offer:"SITELINK - Bundles",                group:"Residential - Spectrum-onlinedeals.com/", label:"113232 — SITELINK - Bundles" },
+  { id:"104205", offerId:"100646", offer:"PARENT - Contact Us",               group:"Residential - Spectrum-onlinedeals.com/", label:"104205 — PARENT - Contact Us" },
+  { id:"111695", offerId:"100646", offer:"SITELINK - Contact",                group:"Residential - Spectrum-onlinedeals.com/", label:"111695 — SITELINK - Contact" },
+  { id:"104294", offerId:"100646", offer:"PARENT - Homepage - Internet",      group:"Residential - Spectrum-onlinedeals.com/", label:"104294 — PARENT - Homepage - Internet" },
+  { id:"113929", offerId:"100646", offer:"NB - Homepage - Internet",          group:"Residential - Spectrum-onlinedeals.com/", label:"113929 — NB - Homepage - Internet" },
+
+  // === VIASAT (101451) ===
+  { id:"112600", offerId:"101451", offer:"Default",                           group:"Residential - Viasat P1", label:"112600 — Default" },
+
+  // === BRIGHTSPEED P1 (103205) ===
+  { id:"112207", offerId:"103205", offer:"Default",                           group:"Residential - BrightSpeed P1", label:"112207 — Default" },
+
+  // === BRIGHTSPEED P2 (103226) ===
+  { id:"112277", offerId:"103226", offer:"Default",                           group:"Residential - BrightSpeed P2", label:"112277 — Default" },
+
+  // === VIVINT P2 (101930) ===
+  { id:"107558", offerId:"101930", offer:"Default",                           group:"Direct - Brand - Vivint P2", label:"107558 — Default" },
+  { id:"107562", offerId:"101930", offer:"SITELINK - Pricing",                group:"Direct - Brand - Vivint P2", label:"107562 — SITELINK - Pricing" },
+  { id:"107563", offerId:"101930", offer:"SITELINK - Packages",               group:"Direct - Brand - Vivint P2", label:"107563 — SITELINK - Packages" },
+  { id:"107564", offerId:"101930", offer:"SITELINK - Deals",                  group:"Direct - Brand - Vivint P2", label:"107564 — SITELINK - Deals" },
+  { id:"107565", offerId:"101930", offer:"SITELINK - Calls",                  group:"Direct - Brand - Vivint P2", label:"107565 — SITELINK - Calls" },
+  { id:"115517", offerId:"101930", offer:"SITELINK - Security-Alarm",         group:"Direct - Brand - Vivint P2", label:"115517 — SITELINK - Security-Alarm" },
+  { id:"115518", offerId:"101930", offer:"SITELINK - Security-Cam",           group:"Direct - Brand - Vivint P2", label:"115518 — SITELINK - Security-Cam" },
+  { id:"107653", offerId:"101930", offer:"CS - LP Linkout",                   group:"Direct - Brand - Vivint P2", label:"107653 — CS - LP Linkout" },
+  { id:"107771", offerId:"101930", offer:"CS - Contact Us",                   group:"Direct - Brand - Vivint P2", label:"107771 — CS - Contact Us" },
+  { id:"109361", offerId:"101930", offer:"CS - Rebrand LP Linkout",           group:"Direct - Brand - Vivint P2", label:"109361 — CS - Rebrand LP Linkout" },
+
+  // === ADT NB (102910) ===
+  { id:"110613", offerId:"102910", offer:"Homepage",                              group:"DIRECT - ADT.com - NB", label:"110613 — Homepage" },
+  { id:"111154", offerId:"102910", offer:"SITELINK - Doorbell-camera - Cameras", group:"DIRECT - ADT.com - NB", label:"111154 — SITELINK - Doorbell-camera - Cameras" },
+  { id:"111155", offerId:"102910", offer:"SITELINK - DEF - Home-security",        group:"DIRECT - ADT.com - NB", label:"111155 — SITELINK - DEF - Home-security" },
+  { id:"111156", offerId:"102910", offer:"SITELINK - DEF - Contact",              group:"DIRECT - ADT.com - NB", label:"111156 — SITELINK - DEF - Contact" },
+  { id:"111157", offerId:"102910", offer:"SITELINK - DEF - Order",                group:"DIRECT - ADT.com - NB", label:"111157 — SITELINK - DEF - Order" },
+  { id:"111158", offerId:"102910", offer:"SITELINK - DEF - Packages",             group:"DIRECT - ADT.com - NB", label:"111158 — SITELINK - DEF - Packages" },
+  { id:"111159", offerId:"102910", offer:"SITELINK - Specials - Promos",          group:"DIRECT - ADT.com - NB", label:"111159 — SITELINK - Specials - Promos" },
+  { id:"111160", offerId:"102910", offer:"SITELINK - Specials - Internet-offers", group:"DIRECT - ADT.com - NB", label:"111160 — SITELINK - Specials - Internet-offers" },
+  { id:"111161", offerId:"102910", offer:"SITELINK - Specials - Deals",           group:"DIRECT - ADT.com - NB", label:"111161 — SITELINK - Specials - Deals" },
+  { id:"111162", offerId:"102910", offer:"SITELINK - Specials - Pricing",         group:"DIRECT - ADT.com - NB", label:"111162 — SITELINK - Specials - Pricing" },
+  { id:"111164", offerId:"102910", offer:"Wireless",                              group:"DIRECT - ADT.com - NB", label:"111164 — Wireless" },
+  { id:"111165", offerId:"102910", offer:"SITELINK - DEF - Specials",             group:"DIRECT - ADT.com - NB", label:"111165 — SITELINK - DEF - Specials" },
+  { id:"111166", offerId:"102910", offer:"Home Alarm",                            group:"DIRECT - ADT.com - NB", label:"111166 — Home Alarm" },
+  { id:"111167", offerId:"102910", offer:"ADT vs SimpliSafe",                     group:"DIRECT - ADT.com - NB", label:"111167 — ADT vs SimpliSafe" },
+  { id:"111168", offerId:"102910", offer:"ADT vs Brinks",                         group:"DIRECT - ADT.com - NB", label:"111168 — ADT vs Brinks" },
+  { id:"111169", offerId:"102910", offer:"ADT vs Xfinity",                        group:"DIRECT - ADT.com - NB", label:"111169 — ADT vs Xfinity" },
+  { id:"111170", offerId:"102910", offer:"ADT vs Vivint",                         group:"DIRECT - ADT.com - NB", label:"111170 — ADT vs Vivint" },
+  { id:"111171", offerId:"102910", offer:"ADT vs Ring",                           group:"DIRECT - ADT.com - NB", label:"111171 — ADT vs Ring" },
+  { id:"111172", offerId:"102910", offer:"Indoor Camera",                         group:"DIRECT - ADT.com - NB", label:"111172 — Indoor Camera" },
+  { id:"111173", offerId:"102910", offer:"Outdoor Camera",                        group:"DIRECT - ADT.com - NB", label:"111173 — Outdoor Camera" },
+  { id:"111174", offerId:"102910", offer:"Doorbell Camera",                       group:"DIRECT - ADT.com - NB", label:"111174 — Doorbell Camera" },
+  { id:"111176", offerId:"102910", offer:"Geo",                                   group:"DIRECT - ADT.com - NB", label:"111176 — Geo" },
+  { id:"111177", offerId:"102910", offer:"Reviews",                               group:"DIRECT - ADT.com - NB", label:"111177 — Reviews" },
+  { id:"111395", offerId:"102910", offer:"SO - Web Form",                         group:"DIRECT - ADT.com - NB", label:"111395 — SO - Web Form" },
+  { id:"111396", offerId:"102910", offer:"SO - TY Page",                          group:"DIRECT - ADT.com - NB", label:"111396 — SO - TY Page" },
+  { id:"111417", offerId:"102910", offer:"SITELINK - DEF - Black Friday",         group:"DIRECT - ADT.com - NB", label:"111417 — SITELINK - DEF - Black Friday" },
+  { id:"111418", offerId:"102910", offer:"SITELINK - DEF - Cyber Monday",         group:"DIRECT - ADT.com - NB", label:"111418 — SITELINK - DEF - Cyber Monday" },
+  { id:"111419", offerId:"102910", offer:"SITELINK - DEF - Holiday Deal",         group:"DIRECT - ADT.com - NB", label:"111419 — SITELINK - DEF - Holiday Deal" },
+  { id:"111420", offerId:"102910", offer:"SITELINK - DEF - Seasonal Promotion",   group:"DIRECT - ADT.com - NB", label:"111420 — SITELINK - DEF - Seasonal Promotion" },
+  { id:"111421", offerId:"102910", offer:"SITELINK - DEF - Limited Deal",         group:"DIRECT - ADT.com - NB", label:"111421 — SITELINK - DEF - Limited Deal" },
+  { id:"111730", offerId:"102910", offer:"SO - Renter DIY",                       group:"DIRECT - ADT.com - NB", label:"111730 — SO - Renter DIY" },
+  { id:"111862", offerId:"102910", offer:"SO - Retargeting Offer",                group:"DIRECT - ADT.com - NB", label:"111862 — SO - Retargeting Offer" },
+  { id:"111867", offerId:"102910", offer:"MTD - Retargeting",                     group:"DIRECT - ADT.com - NB", label:"111867 — MTD - Retargeting" },
+  { id:"112338", offerId:"102910", offer:"SITELINK - Ecomm",                      group:"DIRECT - ADT.com - NB", label:"112338 — SITELINK - Ecomm" },
+  { id:"112438", offerId:"102910", offer:"Ecom Shop",                             group:"DIRECT - ADT.com - NB", label:"112438 — Ecom Shop" },
+  { id:"112440", offerId:"102910", offer:"SO - Ecom Shop #1",                     group:"DIRECT - ADT.com - NB", label:"112440 — SO - Ecom Shop #1" },
+  { id:"112441", offerId:"102910", offer:"SO - Ecom Shop #2",                     group:"DIRECT - ADT.com - NB", label:"112441 — SO - Ecom Shop #2" },
+  { id:"112442", offerId:"102910", offer:"SO - Ecom Shop #3",                     group:"DIRECT - ADT.com - NB", label:"112442 — SO - Ecom Shop #3" },
+  { id:"113225", offerId:"102910", offer:"API Testing",                           group:"DIRECT - ADT.com - NB", label:"113225 — API Testing" },
+  { id:"113407", offerId:"102910", offer:"PMAX",                                  group:"DIRECT - ADT.com - NB", label:"113407 — PMAX" },
+  { id:"113452", offerId:"102910", offer:"Trusted Neighbor",                      group:"DIRECT - ADT.com - NB", label:"113452 — Trusted Neighbor" },
+  { id:"113454", offerId:"102910", offer:"SITELINK - Trusted Neighbor",           group:"DIRECT - ADT.com - NB", label:"113454 — SITELINK - Trusted Neighbor" },
+  { id:"113468", offerId:"102910", offer:"Mail Specials",                         group:"DIRECT - ADT.com - NB", label:"113468 — Mail Specials" },
+  { id:"113507", offerId:"102910", offer:"Demand Generation",                     group:"DIRECT - ADT.com - NB", label:"113507 — Demand Generation" },
+  { id:"113547", offerId:"102910", offer:"SITELINK - Mover",                      group:"DIRECT - ADT.com - NB", label:"113547 — SITELINK - Mover" },
+  { id:"113548", offerId:"102910", offer:"SITELINK - Reactivation",               group:"DIRECT - ADT.com - NB", label:"113548 — SITELINK - Reactivation" },
+  { id:"113652", offerId:"102910", offer:"Specials",                              group:"DIRECT - ADT.com - NB", label:"113652 — Specials" },
+  { id:"114032", offerId:"102910", offer:"Mail",                                  group:"DIRECT - ADT.com - NB", label:"114032 — Mail" },
+  { id:"114034", offerId:"102910", offer:"SITELINK - Monitoring",                 group:"DIRECT - ADT.com - NB", label:"114034 — SITELINK - Monitoring" },
+  { id:"114035", offerId:"102910", offer:"SITELINK - DIY",                        group:"DIRECT - ADT.com - NB", label:"114035 — SITELINK - DIY" },
+  { id:"114063", offerId:"102910", offer:"Monitoring",                            group:"DIRECT - ADT.com - NB", label:"114063 — Monitoring" },
+  { id:"114068", offerId:"102910", offer:"Security Starter",                      group:"DIRECT - ADT.com - NB", label:"114068 — Security Starter" },
+  { id:"114407", offerId:"102910", offer:"DIY",                                   group:"DIRECT - ADT.com - NB", label:"114407 — DIY" },
+  { id:"115335", offerId:"102910", offer:"Camera - Video Essentials - Ver A",     group:"DIRECT - ADT.com - NB", label:"115335 — Camera - Video Essentials - Ver A" },
+  { id:"115336", offerId:"102910", offer:"Camera - Video Essentials - Ver B",     group:"DIRECT - ADT.com - NB", label:"115336 — Camera - Video Essentials - Ver B" },
+  { id:"115397", offerId:"102910", offer:"SITELINK - DEF - 24/7 Pro. Monitoring", group:"DIRECT - ADT.com - NB", label:"115397 — SITELINK - DEF - 24/7 Pro. Monitoring" },
+  { id:"115398", offerId:"102910", offer:"SITELINK - DEF - Professional Home Alarms", group:"DIRECT - ADT.com - NB", label:"115398 — SITELINK - DEF - Professional Home Alarms" },
+  { id:"115399", offerId:"102910", offer:"SITELINK - DEF - Monitoring Starting @ $25", group:"DIRECT - ADT.com - NB", label:"115399 — SITELINK - DEF - Monitoring Starting @ $25" },
+  { id:"115400", offerId:"102910", offer:"SITELINK - DEF - Compare Packages",     group:"DIRECT - ADT.com - NB", label:"115400 — SITELINK - DEF - Compare Packages" },
+  { id:"115401", offerId:"102910", offer:"SITELINK - Specials - Current Deals",   group:"DIRECT - ADT.com - NB", label:"115401 — SITELINK - Specials - Current Deals" },
+  { id:"115402", offerId:"102910", offer:"SITELINK - DEF - ADT Blu",              group:"DIRECT - ADT.com - NB", label:"115402 — SITELINK - DEF - ADT Blu" },
+  { id:"115403", offerId:"102910", offer:"SITELINK - DEF - DIY Options",          group:"DIRECT - ADT.com - NB", label:"115403 — SITELINK - DEF - DIY Options" },
+  { id:"115404", offerId:"102910", offer:"SITELINK - DEF - Build My Own System",  group:"DIRECT - ADT.com - NB", label:"115404 — SITELINK - DEF - Build My Own System" },
+  { id:"115405", offerId:"102910", offer:"SITELINK - DEF - Shop Cameras Online",  group:"DIRECT - ADT.com - NB", label:"115405 — SITELINK - DEF - Shop Cameras Online" },
+  { id:"115406", offerId:"102910", offer:"SITELINK - DEF - Online Store",         group:"DIRECT - ADT.com - NB", label:"115406 — SITELINK - DEF - Online Store" },
+  { id:"115407", offerId:"102910", offer:"SITELINK - DEF - Buy Online",           group:"DIRECT - ADT.com - NB", label:"115407 — SITELINK - DEF - Buy Online" },
+  { id:"115408", offerId:"102910", offer:"SITELINK - DEF - Shop Products",        group:"DIRECT - ADT.com - NB", label:"115408 — SITELINK - DEF - Shop Products" },
+  { id:"115461", offerId:"102910", offer:"Blu",                                   group:"DIRECT - ADT.com - NB", label:"115461 — Blu" },
+  { id:"115467", offerId:"102910", offer:"Homepage - 60% Offer Trusted Neighbor", group:"DIRECT - ADT.com - NB", label:"115467 — Homepage - 60% Offer Trusted Neighbor" },
+  { id:"115468", offerId:"102910", offer:"Homepage - 30% Offer ADT+ System",      group:"DIRECT - ADT.com - NB", label:"115468 — Homepage - 30% Offer ADT+ System" },
+
+  // === ADT P2 (103155) ===
+  { id:"111848", offerId:"103155", offer:"Default",                               group:"DIRECT - ADTSecurity.com - P2", label:"111848 — Default" },
+  { id:"111959", offerId:"103155", offer:"SITELINK - Deals",                      group:"DIRECT - ADTSecurity.com - P2", label:"111959 — SITELINK - Deals" },
+  { id:"111960", offerId:"103155", offer:"SITELINK - Security Installer",         group:"DIRECT - ADTSecurity.com - P2", label:"111960 — SITELINK - Security Installer" },
+  { id:"111961", offerId:"103155", offer:"SITELINK - Security Services",          group:"DIRECT - ADTSecurity.com - P2", label:"111961 — SITELINK - Security Services" },
+  { id:"111962", offerId:"103155", offer:"SITELINK - Security Packages",          group:"DIRECT - ADTSecurity.com - P2", label:"111962 — SITELINK - Security Packages" },
+  { id:"111963", offerId:"103155", offer:"SITELINK - Security Cam",               group:"DIRECT - ADTSecurity.com - P2", label:"111963 — SITELINK - Security Cam" },
+  { id:"111964", offerId:"103155", offer:"SITELINK - Security Alarm",             group:"DIRECT - ADTSecurity.com - P2", label:"111964 — SITELINK - Security Alarm" },
+  { id:"111965", offerId:"103155", offer:"SITELINK - Professional Security",      group:"DIRECT - ADTSecurity.com - P2", label:"111965 — SITELINK - Professional Security" },
+  { id:"111966", offerId:"103155", offer:"SITELINK - Security System",            group:"DIRECT - ADTSecurity.com - P2", label:"111966 — SITELINK - Security System" },
+  { id:"112001", offerId:"103155", offer:"SEO - Organic Traffic Only - Click Pixel", group:"DIRECT - ADTSecurity.com - P2", label:"112001 — SEO - Organic Traffic Only - Click Pixel" },
+  { id:"114722", offerId:"103155", offer:"Fingerprint",                           group:"DIRECT - ADTSecurity.com - P2", label:"114722 — Fingerprint" },
+
+  // === ADT Health P1 (103192) ===
+  { id:"112104", offerId:"103192", offer:"Default",                               group:"DIRECT - ADT - Health - Brand", label:"112104 — Default" },
+  { id:"112135", offerId:"103192", offer:"SITELINK - Medical Alert",              group:"DIRECT - ADT - Health - Brand", label:"112135 — SITELINK - Medical Alert" },
+  { id:"112136", offerId:"103192", offer:"SITELINK - Health Alert",               group:"DIRECT - ADT - Health - Brand", label:"112136 — SITELINK - Health Alert" },
+  { id:"112138", offerId:"103192", offer:"SITELINK - Fall Detection",             group:"DIRECT - ADT - Health - Brand", label:"112138 — SITELINK - Fall Detection" },
+  { id:"112139", offerId:"103192", offer:"SITELINK - Senior Safety",              group:"DIRECT - ADT - Health - Brand", label:"112139 — SITELINK - Senior Safety" },
+  { id:"112140", offerId:"103192", offer:"SITELINK - Promos",                     group:"DIRECT - ADT - Health - Brand", label:"112140 — SITELINK - Promos" },
+  { id:"112246", offerId:"103192", offer:"SO - Medical On The Go",                group:"DIRECT - ADT - Health - Brand", label:"112246 — SO - Medical On The Go" },
+  { id:"112247", offerId:"103192", offer:"SO - Medical Alert Plus",               group:"DIRECT - ADT - Health - Brand", label:"112247 — SO - Medical Alert Plus" },
+  { id:"112248", offerId:"103192", offer:"SO - Medical Alert Basic",              group:"DIRECT - ADT - Health - Brand", label:"112248 — SO - Medical Alert Basic" },
+  { id:"112249", offerId:"103192", offer:"SO - Products",                         group:"DIRECT - ADT - Health - Brand", label:"112249 — SO - Products" },
+  { id:"112352", offerId:"103192", offer:"Retargeting Offer",                     group:"DIRECT - ADT - Health - Brand", label:"112352 — Retargeting Offer" },
+  { id:"113902", offerId:"103192", offer:"SO - Health Compare",                   group:"DIRECT - ADT - Health - Brand", label:"113902 — SO - Health Compare" },
+  { id:"114360", offerId:"103192", offer:"Facebook",                              group:"DIRECT - ADT - Health - Brand", label:"114360 — Facebook" },
+
+  // === ADT Health P2 (102599) ===
+  { id:"109403", offerId:"102599", offer:"Default",                               group:"ADTMedAlert.com - Direct", label:"109403 — Default" },
+  { id:"109416", offerId:"102599", offer:"SITELINK - Deals",                      group:"ADTMedAlert.com - Direct", label:"109416 — SITELINK - Deals" },
+  { id:"109417", offerId:"102599", offer:"SITELINK - Products Pricing",           group:"ADTMedAlert.com - Direct", label:"109417 — SITELINK - Products Pricing" },
+  { id:"109418", offerId:"102599", offer:"SITELINK - Offer",                      group:"ADTMedAlert.com - Direct", label:"109418 — SITELINK - Offer" },
+  { id:"109419", offerId:"102599", offer:"SITELINK - Risk Assessment",            group:"ADTMedAlert.com - Direct", label:"109419 — SITELINK - Risk Assessment" },
+  { id:"109420", offerId:"102599", offer:"SITELINK - Plans Pricing",              group:"ADTMedAlert.com - Direct", label:"109420 — SITELINK - Plans Pricing" },
+  { id:"109421", offerId:"102599", offer:"SITELINK - Quote",                      group:"ADTMedAlert.com - Direct", label:"109421 — SITELINK - Quote" },
+  { id:"109422", offerId:"102599", offer:"SITELINK - Discount Code",              group:"ADTMedAlert.com - Direct", label:"109422 — SITELINK - Discount Code" },
+  { id:"109423", offerId:"102599", offer:"SITELINK - Online",                     group:"ADTMedAlert.com - Direct", label:"109423 — SITELINK - Online" },
+  { id:"114732", offerId:"102599", offer:"Fingerprint",                           group:"ADTMedAlert.com - Direct", label:"114732 — Fingerprint" },
+
+  // === ADT Health NB (103215) ===
+  { id:"112240", offerId:"103215", offer:"Default",                               group:"DIRECT - ADT - Health - NB", label:"112240 — Default" },
+  { id:"112241", offerId:"103215", offer:"SITELINK - Medical Alert",              group:"DIRECT - ADT - Health - NB", label:"112241 — SITELINK - Medical Alert" },
+  { id:"112242", offerId:"103215", offer:"SITELINK - Health Alert",               group:"DIRECT - ADT - Health - NB", label:"112242 — SITELINK - Health Alert" },
+  { id:"112243", offerId:"103215", offer:"SITELINK - Fall Detection",             group:"DIRECT - ADT - Health - NB", label:"112243 — SITELINK - Fall Detection" },
+  { id:"112244", offerId:"103215", offer:"SITELINK - Senior Safety",              group:"DIRECT - ADT - Health - NB", label:"112244 — SITELINK - Senior Safety" },
+  { id:"112245", offerId:"103215", offer:"SITELINK - Promos",                     group:"DIRECT - ADT - Health - NB", label:"112245 — SITELINK - Promos" },
+  { id:"112250", offerId:"103215", offer:"SO - Medical Alert Basic",              group:"DIRECT - ADT - Health - NB", label:"112250 — SO - Medical Alert Basic" },
+  { id:"112251", offerId:"103215", offer:"SO - Medical Alert Plus",               group:"DIRECT - ADT - Health - NB", label:"112251 — SO - Medical Alert Plus" },
+  { id:"112252", offerId:"103215", offer:"SO - Medical On The Go",                group:"DIRECT - ADT - Health - NB", label:"112252 — SO - Medical On The Go" },
+  { id:"112253", offerId:"103215", offer:"SO - Products",                         group:"DIRECT - ADT - Health - NB", label:"112253 — SO - Products" },
+
+  // === ADTSecuritySystem Facebook (103430) ===
+  { id:"113115", offerId:"103430", offer:"TwentyTwoWords - Facebook - #1",        group:"ADTSecuritySystem - Facebook", label:"113115 — TwentyTwoWords - Facebook - #1" },
+  { id:"113117", offerId:"103430", offer:"TwentyTwoWords - Facebook - #2",        group:"ADTSecuritySystem - Facebook", label:"113117 — TwentyTwoWords - Facebook - #2" },
+  { id:"113118", offerId:"103430", offer:"TwentyTwoWords - Facebook - #3",        group:"ADTSecuritySystem - Facebook", label:"113118 — TwentyTwoWords - Facebook - #3" },
+  { id:"113119", offerId:"103430", offer:"TwentyTwoWords - Facebook - #4",        group:"ADTSecuritySystem - Facebook", label:"113119 — TwentyTwoWords - Facebook - #4" },
+  { id:"113120", offerId:"103430", offer:"TwentyTwoWords - Facebook - #5",        group:"ADTSecuritySystem - Facebook", label:"113120 — TwentyTwoWords - Facebook - #5" },
+  { id:"114731", offerId:"103430", offer:"Fingerprint",                           group:"ADTSecuritySystem - Facebook", label:"114731 — Fingerprint" },
+
+  // === ADT Social (103507) ===
+  { id:"113458", offerId:"103507", offer:"Facebook",                              group:"DIRECT - ADT.com - Social", label:"113458 — Facebook" },
+
+  // === SeniorLiving ADTMedAlert (102585) ===
+  { id:"109370", offerId:"102585", offer:"SEO - Hosted",                          group:"SeniorLiving - ADTMedAlert.com", label:"109370 — SEO - Hosted" },
+
+  // === TheSeniorList ADTMedAlert (102408) ===
+  { id:"108909", offerId:"102408", offer:"SEO",                                   group:"TheSeniorList - ADTMedAlert.com", label:"108909 — SEO" },
+  { id:"108803", offerId:"102408", offer:"SEM",                                   group:"TheSeniorList - ADTMedAlert.com", label:"108803 — SEM" },
+  { id:"111397", offerId:"102408", offer:"Black Friday",                          group:"TheSeniorList - ADTMedAlert.com", label:"111397 — Black Friday" },
+  { id:"113469", offerId:"102408", offer:"YouTube",                               group:"TheSeniorList - ADTMedAlert.com", label:"113469 — YouTube" },
+
+  // === ADT Health Social (103762) ===
+  { id:"112868", offerId:"103762", offer:"Default",                               group:"DIRECT - ADT - Health - Social", label:"112868 — Default" },
+
+  // === ADTSecuritySystem Affiliates (102860) ===
+  { id:"110401", offerId:"102860", offer:"Business.org",                          group:"ADTSecuritySystem - Affiliates", label:"110401 — Business.org" },
+  { id:"110402", offerId:"102860", offer:"Safewise.org",                          group:"ADTSecuritySystem - Affiliates", label:"110402 — Safewise.org" },
+  { id:"110403", offerId:"102860", offer:"Reviews.org",                           group:"ADTSecuritySystem - Affiliates", label:"110403 — Reviews.org" },
+  { id:"110404", offerId:"102860", offer:"ASecureLife.com",                       group:"ADTSecuritySystem - Affiliates", label:"110404 — ASecureLife.com" },
+  { id:"111232", offerId:"102860", offer:"hearst-sfgate.com",                     group:"ADTSecuritySystem - Affiliates", label:"111232 — hearst-sfgate.com" },
+  { id:"111356", offerId:"102860", offer:"hearst-mysanantonio.com",               group:"ADTSecuritySystem - Affiliates", label:"111356 — hearst-mysanantonio.com" },
+  { id:"111480", offerId:"102860", offer:"hearst-kcra.com",                       group:"ADTSecuritySystem - Affiliates", label:"111480 — hearst-kcra.com" },
 ];
 
-// ─── CREATIVE DROPDOWN ───────────────────────────────────────────────────────
-let selectedOfferName = '';
-let generatedUrl = '';
-
+function filterCreatives(q) {
+  const filtered = getFilteredCreatives(q);
+  if (!filtered.length && q) {
+    // Allow manual entry — treat typed value as raw creative ID
+    document.getElementById('b-c').value = q;
+    // ── PATCH 3: clear offer name on manual entry ──
+    selectedOfferName = '';
+    buildLink();
+  }
+  buildCreativeList(filtered);
+  document.getElementById('creative-list').style.display = 'block';
+}
 function buildCreativeList(items) {
-  const list = document.getElementById('creative-list'); if (!list) return;
+  const list = document.getElementById('creative-list');
+  if (!list) return;
   if (!items.length) {
     list.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:var(--muted);font-style:italic">No matching offers — type a creative ID to use it directly</div>';
     return;
   }
   const groups = {};
-  items.slice(0, 200).forEach(d => { if (!groups[d.group]) groups[d.group] = []; groups[d.group].push(d); });
+  items.slice(0,200).forEach(d => { if (!groups[d.group]) groups[d.group] = []; groups[d.group].push(d); });
   let html = '';
-  Object.entries(groups).forEach(([grp, vals]) => {
+  const groupEntries = Object.entries(groups);
+  groupEntries.forEach(([grp, vals], gi) => {
+    const groupBg = 'rgba(79,195,247,0.12)';
     const offerIdForGroup = (vals.find(v => v.offerId) || {}).offerId || '';
-    const offerIdBadge = offerIdForGroup ? ` <span style="font-size:10px;font-weight:700;color:var(--muted);opacity:0.7">— Offer ${offerIdForGroup}</span>` : '';
-    html += `<div style="padding:7px 12px 4px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--border);display:flex;align-items:center;background:rgba(79,195,247,0.12)">${grp}${offerIdBadge}</div>`;
+    const offerIdBadge = offerIdForGroup
+      ? ` <span style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;opacity:0.7">— ${offerIdForGroup}</span>`
+      : '';
+    html += `<div style="padding:7px 12px 4px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--border);display:flex;align-items:center;background:${groupBg}">${grp}${offerIdBadge}</div>`;
     vals.forEach(d => {
-      const offerSafe = (d.offer || '').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-      html += `<div onclick="selectCreative('${d.id}','${offerSafe}')"
-        style="padding:8px 14px;font-size:12px;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:8px"
+      const offerSafe = (d.offer || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      html += `<div class="search-opt" onclick="selectCreative('${d.id}','${offerSafe}')"
+        style="padding:8px 14px;font-size:12px;color:var(--text);cursor:pointer;transition:background .12s;display:flex;align-items:center;gap:8px"
         onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
         <span style="font-family:monospace;color:var(--creative);min-width:60px;flex-shrink:0;font-size:11px;font-weight:600">${d.id}</span>
         <span style="color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${d.offer || 'Creative ' + d.id}</span>
@@ -849,17 +1148,7 @@ function buildCreativeList(items) {
   });
   list.innerHTML = html;
 }
-
-function filterCreatives(q) {
-  const filtered = getFilteredCreatives(q);
-  if (!filtered.length && q) {
-    document.getElementById('b-c').value = q;
-    selectedOfferName = '';
-    buildLink();
-  }
-  buildCreativeList(filtered);
-  showCreativeList();
-}
+// ── PATCH 2: store offer name when a creative is selected ──
 function selectCreative(id, offerName) {
   document.getElementById('b-c-search').value = id + ' — ' + offerName;
   document.getElementById('b-c').value = id;
@@ -868,19 +1157,25 @@ function selectCreative(id, offerName) {
   buildLink();
 }
 function showCreativeList() {
-  buildCreativeList(getFilteredCreatives(document.getElementById('b-c-search').value));
+  const q = document.getElementById('b-c-search').value;
+  buildCreativeList(getFilteredCreatives(q).slice(0, 80));
   document.getElementById('creative-list').style.display = 'block';
 }
 function hideCreativeList() { const l = document.getElementById('creative-list'); if (l) l.style.display = 'none'; }
 
-// ─── S PARAMS ────────────────────────────────────────────────────────────────
 let sParams = {};
-const sParamLabels = { s7:'Marketing Channel', s15:'Web DNIS', s17:'Ecom Clickout', s19:'Source Code' };
+const sParamLabels = {
+  s7: 'Marketing Channel',
+  s15: 'Web DNIS',
+  s17: 'Ecom Clickout',
+  s19: 'Source Code'
+};
 function handleSParam() {
   const key = document.getElementById('b-sparam-key').value;
   const wrap = document.getElementById('sparam-value-wrap');
   const valInput = document.getElementById('b-sparam-val');
   if (!key) { wrap.style.display = 'none'; return; }
+  // s17 has a fixed value — auto-commit immediately
   if (key === 's17') {
     sParams['s17'] = 'ecomClickout';
     renderSParamChips();
@@ -906,24 +1201,33 @@ function commitSParam() {
   document.getElementById('sparam-value-wrap').style.display = 'none';
   buildLink();
 }
-function removeSParam(key) { delete sParams[key]; renderSParamChips(); buildLink(); }
+function removeSParam(key) {
+  delete sParams[key];
+  renderSParamChips();
+  buildLink();
+}
 function renderSParamChips() {
-  document.getElementById('sparam-chips').innerHTML = Object.entries(sParams).map(([k,v]) =>
-    `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-family:monospace;background:var(--subid-bg);color:var(--subid);border:1px solid var(--subid-bg)">
-      ${k}=${v} <span onclick="removeSParam('${k}')" style="cursor:pointer;margin-left:2px;opacity:0.7;font-size:13px">&times;</span>
+  const chips = document.getElementById('sparam-chips');
+  chips.innerHTML = Object.entries(sParams).map(([k, v]) =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-family:var(--font-mono,monospace);background:var(--subid-bg);color:var(--subid);border:1px solid var(--subid-bg)">
+      ${k}=${v}
+      <span onclick="removeSParam('${k}')" style="cursor:pointer;margin-left:2px;opacity:0.7;font-size:13px">&times;</span>
     </span>`
   ).join('');
 }
-
-// ─── LINK BUILDER ────────────────────────────────────────────────────────────
 function buildLink() {
   const domainSel = document.getElementById('b-domain').value.trim();
   const aSel = document.getElementById('b-a').value.trim();
+  const aCustom = document.getElementById('b-a-custom') ? document.getElementById('b-a-custom').value.trim() : '';
   const cVal = document.getElementById('b-c').value.trim() || document.getElementById('b-c-search').value.trim();
   const custom = document.getElementById('b-custom').value.trim();
   const customInput = document.getElementById('b-a-custom');
-  if (aSel === 'custom') { customInput.style.display = 'block'; } else { customInput.style.display = 'none'; }
-  const aVal = aSel === 'custom' ? (customInput ? customInput.value.trim() : '') : aSel;
+  if (aSel === 'custom') {
+    customInput.style.display = 'block';
+  } else {
+    customInput.style.display = 'none';
+  }
+  const aVal = aSel === 'custom' ? aCustom : aSel;
   const domain = domainSel;
   if (!domain && !aVal && !cVal) {
     document.getElementById('outputUrl').innerHTML = '<span style="color:var(--faint);font-style:italic;font-size:12px">Fill in the form to generate your tracking link…</span>';
@@ -931,11 +1235,15 @@ function buildLink() {
     return;
   }
   const base = domain ? 'https://' + domain.replace(/^https?:\/\//, '') : 'https://[tracking-domain]';
-  let parts = [], breakdown = [];
+  let parts = [];
+  let breakdown = [];
   if (aVal) { parts.push('a=' + aVal); breakdown.push(`<div><span style="color:var(--muted)">a=</span><span style="color:var(--affiliate)">${aVal}</span> <span style="color:var(--faint)">— affiliate ID</span></div>`); }
+  // ── PATCH 4: show offer name + offer ID in creative breakdown ──
   if (cVal) {
     parts.push('c=' + cVal);
-    const offerLabel = selectedOfferName ? `${selectedOfferName}` : cVal;
+    const offerLabel = selectedOfferName
+      ? `${selectedOfferName} <span style="color:var(--faint);font-size:10px">(Offer ID: ${cVal})</span>`
+      : cVal;
     breakdown.push(`<div><span style="color:var(--muted)">c=</span><span style="color:var(--creative)">${cVal}</span> <span style="color:var(--faint)">—</span> <span style="color:var(--creative);font-weight:500">${offerLabel}</span> <span style="color:var(--faint)">→ offer contract</span></div>`);
   }
   const s20Val = document.getElementById('b-s20').value.trim();
@@ -946,19 +1254,21 @@ function buildLink() {
   });
   if (custom) {
     custom.split('&').forEach(p => {
-      p = p.trim(); if (!p) return;
-      parts.push(p);
-      const [k, v] = p.split('=');
-      breakdown.push(`<div><span style="color:var(--subid)">${k}=</span><span style="color:var(--subid)">${v||''}</span> <span style="color:var(--faint)">— custom parameter</span></div>`);
+      p = p.trim();
+      if (p) {
+        parts.push(p);
+        const [k, v] = p.split('=');
+        breakdown.push(`<div><span style="color:var(--subid)">${k}=</span><span style="color:var(--subid)">${v || ''}</span> <span style="color:var(--faint)">— custom parameter</span></div>`);
+      }
     });
   }
   const fullUrl = base + '/?' + parts.join('&');
   const domainPart = `<span class="output-seg-domain">${base}</span><span style="color:var(--faint)">/?</span>`;
-  const paramStr = parts.map(p => {
+  const paramStr = parts.map((p, i) => {
     let color = 'var(--muted)';
     if (p.startsWith('a=')) color = 'var(--affiliate)';
     else if (p.startsWith('c=')) color = 'var(--creative)';
-    else color = 'var(--subid)';
+    else if (!p.startsWith('a=') && !p.startsWith('c=')) color = 'var(--subid)';
     return `<span style="color:${color}">${p}</span>`;
   }).join('<span style="color:var(--faint)">&</span>');
   document.getElementById('outputUrl').innerHTML = domainPart + paramStr;
@@ -966,65 +1276,136 @@ function buildLink() {
   generatedUrl = fullUrl;
   document.getElementById('outputUrl').dataset.raw = fullUrl;
 }
-
-// ─── THEME ───────────────────────────────────────────────────────────────────
 function toggleTheme() {
   const html = document.documentElement;
   const btn = document.getElementById('themeToggle');
   if (html.classList.contains('light')) {
-    html.classList.remove('light'); btn.textContent = '🌙'; localStorage.setItem('theme','dark');
+    html.classList.remove('light');
+    btn.textContent = '🌙';
+    localStorage.setItem('theme', 'dark');
   } else {
-    html.classList.add('light'); btn.textContent = '☀️'; localStorage.setItem('theme','light');
+    html.classList.add('light');
+    btn.textContent = '☀️';
+    localStorage.setItem('theme', 'light');
   }
 }
 (function() {
   const saved = localStorage.getItem('theme');
-  if (saved === 'dark') document.documentElement.classList.remove('light');
-  else document.documentElement.classList.add('light');
+  if (saved === 'dark') {
+    document.documentElement.classList.remove('light');
+  } else {
+    document.documentElement.classList.add('light');
+  }
   document.addEventListener('DOMContentLoaded', function() {
-    const btn = document.getElementById('themeToggle'); if (!btn) return;
-    btn.textContent = !document.documentElement.classList.contains('light') ? '🌙' : '☀️';
+    const btn = document.getElementById('themeToggle');
+    if (!btn) return;
+    const isDark = !document.documentElement.classList.contains('light');
+    btn.textContent = isDark ? '🌙' : '☀️';
   });
 })();
-
-// ─── COPY ────────────────────────────────────────────────────────────────────
 function fallbackCopy(text) {
   const ta = document.createElement('textarea');
-  ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
-  document.body.appendChild(ta); ta.focus(); ta.select();
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
   try { document.execCommand('copy'); } catch(e) {}
   document.body.removeChild(ta);
 }
 function copyLink() {
-  const raw = generatedUrl; if (!raw) return;
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(raw).catch(() => fallbackCopy(raw));
-  else fallbackCopy(raw);
+  const raw = generatedUrl;
+  if (!raw) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(raw).catch(() => fallbackCopy(raw));
+  } else {
+    fallbackCopy(raw);
+  }
   const btn = document.getElementById('copyBtn');
-  btn.textContent = '✓ Copied!'; btn.classList.add('copied');
-  const bar = document.getElementById('statusBar'); bar.classList.add('show');
+  btn.textContent = '✓ Copied!';
+  btn.classList.add('copied');
+  const bar = document.getElementById('statusBar');
+  bar.classList.add('show');
   setTimeout(() => { btn.textContent = 'Copy tracking link'; btn.classList.remove('copied'); bar.classList.remove('show'); }, 2000);
 }
-
-// ─── TEST LINK ───────────────────────────────────────────────────────────────
-function testLink() {
-  const result = document.getElementById('testResult');
-  if (!generatedUrl) {
-    result.style.cssText = 'display:block;background:rgba(255,183,77,0.08);border:1px solid rgba(255,183,77,0.3);border-radius:8px;padding:10px 14px;font-size:12px;line-height:1.7;color:#FFB74D;margin-top:10px';
-    result.innerHTML = '⚠️ Build a tracking link first.';
+function renderHops(hops) {
+  return hops.map((h, i) => {
+    const isLast = i === hops.length - 1;
+    const isRedirect = h.status >= 300 && h.status < 400;
+    const isError = h.status >= 400;
+    const isOk = h.status >= 200 && h.status < 300;
+    const statusColor = isOk ? '#66BB6A' : isRedirect ? '#FFB74D' : '#EF5350';
+    const statusLabel = h.label || (isOk ? 'OK' : isRedirect ? 'Redirect' : 'Error');
+    const arrow = isLast ? '' : `<div style="padding:4px 0 4px 20px;color:var(--faint);font-size:13px">↓</div>`;
+    return `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0">
+        <div style="flex-shrink:0;text-align:center">
+          <div style="font-family:monospace;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;background:${statusColor}22;color:${statusColor};border:1px solid ${statusColor}44">${h.status}</div>
+          <div style="font-size:9px;color:${statusColor};margin-top:2px;opacity:0.8">${statusLabel}</div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:monospace;font-size:11px;color:${isLast && isError ? '#EF5350' : isLast && isOk ? 'var(--text)' : 'var(--muted)'};word-break:break-all;line-height:1.5">${h.url}</div>
+        </div>
+      </div>${arrow}`;
+  }).join('');
+}
+function statusDescription(code) {
+  const map = {
+    400: 'Bad Request', 401: 'Unauthorized',
+    403: 'Forbidden — the destination server refused access.',
+    404: 'Not Found — the destination page does not exist.',
+    429: 'Too Many Requests',
+    500: 'Internal Server Error.',
+    502: 'Bad Gateway',
+    503: 'Service Unavailable.',
+  };
+  return map[code] || 'Unexpected server response.';
+}
+function parseJson(text) {
+  try { return JSON.parse(text.trim()); } catch(e) {}
+  const m = text.match(/\{[\s\S]*\}/);
+  if (!m) return null;
+  try { return JSON.parse(m[0]); } catch(e) { return null; }
+}
+function incognitoLink() {
+  const raw = generatedUrl;
+  const hint = document.getElementById('incognitoHint');
+  if (!raw) {
+    hint.style.display = 'block';
+    hint.style.color = '#FFB74D';
+    hint.style.background = 'rgba(255,183,77,0.08)';
+    hint.style.borderColor = 'rgba(255,183,77,0.3)';
+    hint.innerHTML = '⚠️ Please build a tracking link first.';
     return;
   }
-  // Open the tracking link directly in a new tab — real browser request,
-  // no server-side blocking. You'll see the full redirect in the address bar.
-  window.open(generatedUrl, '_blank');
-
-  result.style.cssText = 'display:block;background:rgba(79,195,247,0.07);border:1px solid rgba(79,195,247,0.25);border-radius:8px;padding:10px 14px;font-size:12px;line-height:1.7;color:var(--text);margin-top:10px';
-  result.innerHTML = `
-    <div style="font-weight:600;color:var(--accent);font-size:13px;margin-bottom:4px">↗ Opened in new tab</div>
-    <div style="color:var(--muted);font-size:12px">Watch the address bar — it will show the full redirect chain as it resolves.
-    For a clean test with no cookies, copy the link and paste it into an incognito window
-    <span style="color:var(--faint)">(Ctrl+Shift+N on Windows · ⌘+Shift+N on Mac)</span>.</div>`;
+  navigator.clipboard.writeText(raw).then(() => {
+    hint.style.display = 'block';
+    hint.style.color = '#9575CD';
+    hint.style.background = 'rgba(149,117,205,0.1)';
+    hint.style.borderColor = 'rgba(149,117,205,0.3)';
+    hint.innerHTML = '✓ Link copied! Now:<br><strong>Mac:</strong> ⌘+Shift+N → paste &amp; go<br><strong>Windows/Linux:</strong> Ctrl+Shift+N → paste &amp; go';
+    const btn = document.getElementById('incognitoBtn');
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.innerHTML = 'Copy Tracking Link'; hint.style.display = 'none'; }, 4000);
+  }).catch(() => {
+    hint.style.display = 'block';
+    hint.innerHTML = '⚠️ Could not copy automatically. Copy the link above manually.';
+  });
+}
+function testLink() {
+  const raw = generatedUrl;
+  const result = document.getElementById('testResult');
+  if (!raw) {
+    result.style.display = 'block';
+    result.style.background = 'rgba(255,183,77,0.1)';
+    result.style.border = '1px solid rgba(255,183,77,0.3)';
+    result.style.color = '#FFB74D';
+    result.innerHTML = '⚠️ Please build a tracking link first before testing.';
+    return;
+  }
+  result.style.display = 'none';
+  window.open(raw, '_blank');
 }
 </script>
 </body>
 </html>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
